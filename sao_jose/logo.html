@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Escola São José — motion</title>
+<style>
+  @font-face { font-family: "Antonio"; src: url(fonts/antonio.woff2) format("woff2"); font-weight: 100 700; }
+  @font-face { font-family: "PT Serif"; src: url(fonts/ptserif-bold.woff2) format("woff2"); font-weight: 700; }
+  html, body { margin: 0; background: #000; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: #2a8efd; }
+  .abs { position: absolute; left: 0; top: 0; }
+  #bg { width: 1080px; height: 1920px;
+        background: radial-gradient(ellipse 760px 1150px at 540px 990px, #73b6ff 0%, #5aa8ff 38%, #2f92fd 72%, #0a82fe 100%); }
+  #rays { left: -960px; top: -540px; width: 3000px; height: 3000px; transform-origin: 1500px 1500px; opacity: 0;
+          background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.16) 0deg 5deg, rgba(255,255,255,0) 7deg 22.5deg);
+          -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0%, rgba(0,0,0,.6) 18%, transparent 36%);
+          mix-blend-mode: soft-light; }
+  #glow { width: 1080px; height: 1920px; opacity: 0;
+          background: radial-gradient(circle 520px at 540px 930px, rgba(255,255,255,.55), rgba(255,255,255,0) 70%); }
+  .p { position: absolute; border-radius: 50%; background: #fff; }
+  #heart { width: 1080px; height: 1920px; overflow: visible; transform-origin: 540px 930px; }
+  #logo { width: 1080px; height: 1920px; transform-origin: 539.5px 927px; }
+  #shadow { left: 169px; top: 697px; width: 741px; height: 474px; border-radius: 46px; background: #0a2f6b;
+            filter: blur(38px); opacity: 0; }
+  #boxwrap { left: 169px; top: 697px; width: 741px; height: 474px; transform-origin: 370px 237px; }
+  #box { left: 0; top: 0; width: 741px; height: 474px; border-radius: 46px; background: #ff5200; overflow: hidden; }
+  #shine { left: -300px; top: -100px; width: 180px; height: 700px; transform: skewX(-20deg);
+           background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55), rgba(255,255,255,0)); mix-blend-mode: soft-light; }
+  #tabwrap { left: 217px; top: 624px; width: 364px; height: 125px; overflow: hidden; border-radius: 13px; }
+  #tab { left: 0; top: 0; width: 364px; height: 125px; background: #0b3874; border-radius: 13px; }
+  .txt { position: absolute; white-space: nowrap; color: #fff; font-family: "Antonio"; line-height: 1; transform-origin: 0 0; }
+  .txt span { display: inline-block; }
+  #serif { font-family: "PT Serif"; font-weight: 700; color: #123a85; }
+  #flash { width: 1080px; height: 1920px; background: #fff; opacity: 0; }
+  .ring { position: absolute; left: 540px; top: 930px; width: 0; height: 0; }
+  .ring i { position: absolute; left: -300px; top: -300px; width: 600px; height: 600px; border-radius: 50%; box-sizing: border-box; }
+  #wipe { left: 540px; top: 960px; width: 0; height: 0; }
+  #wipe div { position: absolute; top: -2000px; height: 4000px; }
+  #vig { width: 1080px; height: 1920px; pointer-events: none;
+         background: radial-gradient(ellipse 900px 1300px at 540px 960px, rgba(0,0,0,0) 60%, rgba(0,30,90,.22) 100%); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg" class="abs"></div>
+  <div id="rays" class="abs"></div>
+  <div id="glow" class="abs"></div>
+  <div id="parts" class="abs"></div>
+
+  <svg id="heart" class="abs" viewBox="0 0 1080 1920">
+    <g id="heartg">
+      <path id="hblue" fill="none" stroke="#005ec2" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <path id="horange" fill="none" stroke="#f58634" stroke-width="68" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+
+  <div class="ring" id="ring1"><i style="border: 14px solid #fff"></i></div>
+  <div class="ring" id="ring2"><i style="border: 26px solid #ff5a00"></i></div>
+
+  <div id="logo" class="abs">
+    <div id="shadow" class="abs"></div>
+    <div id="boxwrap" class="abs">
+      <div id="box" class="abs">
+        <div id="l2" class="txt"></div>
+        <div id="l3" class="txt"></div>
+        <div id="shine" class="abs"></div>
+      </div>
+    </div>
+    <div id="tabwrap" class="abs">
+      <div id="tab" class="abs">
+        <div id="l1" class="txt"></div>
+      </div>
+    </div>
+    <div id="serif" class="txt"></div>
+  </div>
+
+  <div id="flash" class="abs"></div>
+  <div id="vig" class="abs"></div>
+  <div id="wipe" class="abs">
+    <div id="wcover" style="left: 60px; width: 4000px; background: #0b3874"></div>
+    <div id="worange" style="left: -110px; width: 170px; background: #ff5a00"></div>
+    <div id="wwhite" style="left: -150px; width: 40px; background: #fff"></div>
+  </div>
+</div>
+
+<script>
+// ------------------------------------------------------------ easing
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+const outQuint = (x) => 1 - Math.pow(1 - x, 5);
+const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const inOutCubic = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const inOutExpo = (x) => x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? Math.pow(2, 20 * x - 10) / 2 : (2 - Math.pow(2, -20 * x + 10)) / 2;
+const inCubic = (x) => x * x * x;
+const outBack = (x, k = 1.7) => 1 + (k + 1) * Math.pow(x - 1, 3) + k * Math.pow(x - 1, 2);
+const outElastic = (x) => x <= 0 ? 0 : x >= 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI) / 3) + 1;
+const bump = (t, a, b) => { const x = prog(t, a, b); return Math.sin(Math.PI * x) ** 2; };
+const $ = (id) => document.getElementById(id);
+
+// ------------------------------------------------------------ texto: ajusta à caixa do logo original
+const meas = document.createElement("canvas").getContext("2d");
+function fit(el, text, family, weight, box, origin, split) {
+  // box = [x0, capTop, x1, baseline] em coordenadas do quadro; origin = canto do elemento pai
+  meas.font = `${weight} 100px "${family}"`;
+  const m = meas.measureText(text);
+  const cap = meas.measureText("H").actualBoundingBoxAscent / 100;
+  const size = (box[3] - box[1]) / cap;
+  meas.font = `${weight} ${size}px "${family}"`;
+  const mm = meas.measureText(text);
+  const ink = mm.actualBoundingBoxRight + mm.actualBoundingBoxLeft;
+  const sx = (box[2] - box[0]) / ink;
+  el.style.fontSize = size + "px";
+  el.style.fontWeight = weight;
+  el.innerHTML = split ? [...text].map((c) => `<span>${c === " " ? "&nbsp;" : c}</span>`).join("") : text;
+  // linha de base: line-height 1 -> baseline ≈ ascent do conteúdo; mede pelo DOM
+  el.style.left = "0px"; el.style.top = "0px"; el.style.transform = `scaleX(${sx})`;
+  const probe = document.createElement("span");
+  probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+  el.appendChild(probe);
+  const er = el.getBoundingClientRect(), pr = probe.getBoundingClientRect();
+  const baseOff = pr.top - er.top;
+  el.removeChild(probe);
+  el.style.left = (box[0] - origin[0] + mm.actualBoundingBoxLeft * sx) + "px";
+  el.style.top = (box[3] - origin[1] - baseOff) + "px";
+  return { sx, size };
+}
+
+// ------------------------------------------------------------ coração
+function heartPath(cx, cy, s, rot) {
+  const P = [[0,-235],[40,-335],[150,-395],[262,-382],[392,-366],[458,-252],[446,-128],[430,10],[300,160],[-10,430],
+             [-320,150],[-445,-10],[-452,-150],[-460,-280],[-372,-372],[-252,-380],[-140,-388],[-40,-332],[0,-235]];
+  const r = rot * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+  const tp = ([x, y]) => [cx + s * (x * c - y * sn), cy + s * (x * sn + y * c)];
+  const q = P.map(tp).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`);
+  let d = `M${q[0]}`;
+  for (let i = 1; i < q.length; i += 3) d += ` C${q[i]} ${q[i + 1]} ${q[i + 2]}`;
+  return d;
+}
+
+// ------------------------------------------------------------ partículas
+function rnd(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+const R = rnd(42);
+const parts = [];
+for (let i = 0; i < 46; i++) {
+  const d = document.createElement("div");
+  d.className = "p";
+  const size = 3 + R() * 9;
+  d.style.width = d.style.height = size + "px";
+  if (size > 8) d.style.filter = "blur(2px)";
+  $("parts").appendChild(d);
+  parts.push({ el: d, x: R() * 1080, y: R() * 1920, sp: 18 + R() * 50, ph: R() * 6.28, a: 0.25 + R() * 0.5, dr: (R() - 0.5) * 30 });
+}
+
+let L2spans = [], L1spans = [];
+async function setup() {
+  await document.fonts.load('600 100px "Antonio"');
+  await document.fonts.load('500 100px "Antonio"');
+  await document.fonts.load('700 100px "PT Serif"');
+  await document.fonts.ready;
+  // coordenadas medidas no logo original (1080x1920)
+  fit($("l1"), "ESCOLA", "Antonio", 500, [280, 647, 518, 728], [217, 624], true);
+  fit($("l2"), "São José", "Antonio", 600, [251, 779, 822, 990], [169, 697], true);
+  fit($("l3"), "DE VILA MATILDE", "Antonio", 500, [250, 1022, 829, 1110], [169, 697], false);
+  fit($("serif"), "INSTITUTO DAS FILHAS DE SÃO JOSÉ", "PT Serif", 700, [223, 1192, 855, 1222], [0, 0], false);
+  L2spans = [...$("l2").querySelectorAll("span")];
+  L1spans = [...$("l1").querySelectorAll("span")];
+  window.ready = true;
+}
+
+// ------------------------------------------------------------ cena
+const HEART = { cx: 528, cy: 942, s: 1.08, rot: 21 };
+const dBase = heartPath(HEART.cx, HEART.cy, HEART.s, HEART.rot);
+const dBlue = heartPath(HEART.cx + 6, HEART.cy + 12, HEART.s * 0.9, HEART.rot);
+$("horange").setAttribute("d", dBase);
+$("hblue").setAttribute("d", dBlue);
+const lenO = $("horange").getTotalLength(), lenB = $("hblue").getTotalLength();
+$("horange").style.strokeDasharray = lenO; $("hblue").style.strokeDasharray = lenB;
+
+// posição do logo dentro do coração (imagem 2) e na tela final (imagem 1)
+const SMALL = { x: 522 - 539.5, y: 975 - 927, s: 0.605 };
+const T_TR = 4.70; // impacto da transição
+
+function renderAt(t) {
+  // ---- abertura: wipe diagonal (navy -> laranja -> branco)
+  const w = inOutExpo(prog(t, 0.12, 0.95));
+  $("wipe").style.transform = `rotate(-24deg) translateX(${lerp(-640, 1900, w)}px)`;
+  $("wipe").style.display = t > 1.0 ? "none" : "block";
+
+  // ---- fundo
+  const bgPulse = 1 + 0.04 * bump(t, T_TR - 0.05, T_TR + 1.2);
+  $("bg").style.transform = `scale(${bgPulse})`;
+  $("glow").style.opacity = 0.35 * prog(t, 0.6, 2.0) + 0.5 * bump(t, T_TR - 0.1, T_TR + 1.4) + 0.12 * prog(t, 5.5, 7);
+  $("rays").style.opacity = 0.9 * outCubic(prog(t, T_TR, T_TR + 0.9));
+  $("rays").style.transform = `rotate(${t * 7}deg) scale(${lerp(0.6, 1, outExpo(prog(t, T_TR, T_TR + 1.2)))})`;
+
+  // ---- partículas
+  const pAlpha = prog(t, 0.5, 1.6);
+  for (const p of parts) {
+    let y = (p.y - t * p.sp) % 1920; if (y < 0) y += 1920;
+    const burst = outExpo(prog(t, T_TR, T_TR + 1.4));
+    const dx = (p.x - 540), dy = (y - 930);
+    const push = 1 + 0.25 * burst * (1 - prog(t, T_TR + 1.4, T_TR + 3));
+    const x = 540 + dx * push + Math.sin(t * 0.8 + p.ph) * p.dr;
+    const yy = 930 + dy * push;
+    p.el.style.transform = `translate(${x}px, ${yy}px)`;
+    p.el.style.opacity = pAlpha * p.a * (0.55 + 0.45 * Math.sin(t * 2.2 + p.ph));
+  }
+
+  // ---- coração: desenho do traço
+  const dh = inOutCubic(prog(t, 0.55, 2.05));
+  const db = inOutCubic(prog(t, 0.68, 2.2));
+  $("horange").style.strokeDashoffset = lenO * (1 - dh);
+  $("hblue").style.strokeDashoffset = lenB * (1 - db);
+  // batida do coração (lub-dub) + transição: explode em zoom
+  const beat = 0.055 * bump(t, 3.38, 3.58) + 0.075 * bump(t, 3.62, 3.86);
+  const antic = 0.05 * outCubic(prog(t, 4.2, 4.55)) * (1 - prog(t, 4.55, 4.7));
+  const zoom = Math.pow(inCubic(prog(t, 4.5, 5.1)), 1) * 5.5;
+  const hs = 1 + beat - antic + zoom;
+  const hrot = lerp(0, -14, inCubic(prog(t, 4.5, 5.1)));
+  $("heart").style.transform = `rotate(${hrot}deg) scale(${hs})`;
+  $("heart").style.opacity = 1 - prog(t, 4.85, 5.1);
+  $("heart").style.filter = `blur(${8 * prog(t, 4.65, 5.1)}px)`;
+
+  // ---- logo: posição pequena (dentro do coração) -> grande
+  const move = outExpo(prog(t, 4.55, 5.55));
+  const floatY = Math.sin(t * 1.6) * 5 * (1 - move) + Math.sin(t * 1.3) * 3 * move;
+  let s = lerp(SMALL.s, 1, move);
+  s *= 1 + 0.6 * beat - antic;
+  s *= 1 + 0.035 * prog(t, 5.2, 10);           // push-in lento
+  const lx = lerp(SMALL.x, 0, move), ly = lerp(SMALL.y, 0, move) + floatY;
+  const lrot = lerp(0, -2.5, outCubic(prog(t, 4.2, 4.55))) * (1 - move);
+  $("logo").style.transform = `translate(${lx}px, ${ly}px) rotate(${lrot}deg) scale(${s})`;
+  $("logo").style.filter = `blur(${2.4 * bump(t, 4.62, 5.0)}px)`;
+  $("shadow").style.opacity = 0.35 * outCubic(prog(t, T_TR, T_TR + 0.8));
+  $("shadow").style.transform = `translateY(${30 * outCubic(prog(t, T_TR, T_TR + 0.8))}px)`;
+
+  // caixa laranja: pop com overshoot
+  const bp = prog(t, 1.35, 1.95);
+  const bs = t < 1.35 ? 0 : outBack(bp, 2.2);
+  $("boxwrap").style.transform = `scale(${bs}) rotate(${lerp(-8, 0, outCubic(bp))}deg)`;
+  $("boxwrap").style.opacity = t < 1.35 ? 0 : 1;
+
+  // aba ESCOLA: abre da esquerda
+  const tp = outExpo(prog(t, 1.75, 2.35));
+  $("tabwrap").style.clipPath = `inset(0 ${100 - tp * 100}% 0 0 round 13px)`;
+  $("tab").style.transform = `translateX(${lerp(-60, 0, tp)}px)`;
+  L1spans.forEach((sp, i) => {
+    const x = outBack(prog(t, 1.95 + i * 0.035, 2.4 + i * 0.035), 1.4);
+    sp.style.transform = `translateY(${lerp(130, 0, x)}px)`;
+  });
+
+  // São José: letras sobem de dentro da caixa
+  L2spans.forEach((sp, i) => {
+    const a = 2.0 + i * 0.045;
+    const x = outBack(prog(t, a, a + 0.5), 1.6);
+    sp.style.transform = `translateY(${lerp(330, 0, x)}px) rotate(${lerp(12, 0, outCubic(prog(t, a, a + 0.5)))}deg)`;
+  });
+
+  // DE VILA MATILDE: máscara da esquerda p/ direita + leve deslize
+  const v = outExpo(prog(t, 2.45, 3.05));
+  $("l3").style.clipPath = `inset(-20px ${100 - v * 100}% -20px 0)`;
+  $("l3").style.marginLeft = lerp(-40, 0, v) + "px";
+
+  // Instituto: tracking abrindo -> normal
+  const sv = outCubic(prog(t, 2.75, 3.45));
+  $("serif").style.opacity = sv;
+  $("serif").style.letterSpacing = lerp(14, 0, outExpo(prog(t, 2.75, 3.6))) + "px";
+  $("serif").style.marginLeft = lerp(-215, 0, outExpo(prog(t, 2.75, 3.6))) + "px";
+
+  // brilho atravessando a caixa
+  const sh1 = inOutCubic(prog(t, 3.0, 3.7)), sh2 = inOutCubic(prog(t, 6.0, 6.9)), sh3 = inOutCubic(prog(t, 8.75, 9.55));
+  const shx = t < 4 ? sh1 : t < 8 ? sh2 : sh3;
+  $("shine").style.transform = `translateX(${lerp(0, 1300, shx)}px) skewX(-20deg)`;
+
+  // ---- transição: flash + ondas
+  $("flash").style.opacity = 0.5 * Math.exp(-Math.max(0, t - T_TR) * 8) * (t >= T_TR ? 1 : 0) + 0.15 * prog(t, 4.5, T_TR) * (t < T_TR ? 1 : 0);
+  [["ring1", 0, 3.4], ["ring2", 0.06, 2.8]].forEach(([id, dl, maxS]) => {
+    const r = prog(t, T_TR + dl, T_TR + dl + 0.9);
+    const el = $(id).firstChild;
+    el.style.transform = `scale(${lerp(0.2, maxS, outExpo(r))})`;
+    el.style.opacity = r > 0 && r < 1 ? (1 - r) * 0.9 : 0;
+  });
+}
+window.renderAt = renderAt;
+setup().then(() => renderAt(9.9));
+</script>
+</body>
+</html>
