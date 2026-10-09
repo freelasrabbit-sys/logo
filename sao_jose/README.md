@@ -7,11 +7,14 @@ aba "ESCOLA", letras de "São José" subindo, "DE VILA MATILDE" revelado, "Insti
 brilho e batida do coração (lub-dub) → transição com zoom no coração, flash e ondas → logo em tela
 cheia com raios de luz, partículas e push-in. A trilha (Mi maior, 120 BPM) acompanha cada evento.
 
-O logo é recriado em vetor (`logo.html`, fontes Antonio e PT Serif, licença OFL) e renderizado
-quadro a quadro com Playwright. Para regenerar:
+O logotipo vem do arquivo oficial `assets/logo_oficial.png`, usado diretamente: `extract_logo.py`
+recorta dele as camadas que se movem (caixa, aba, letras) sem redesenhar nada, e confere que a
+recomposição reproduz o arquivo original. `logo.html` anima essas camadas e é renderizado quadro a
+quadro com Playwright. Para regenerar:
 
 ```bash
 mkdir -p build video
+python3 extract_logo.py
 python3 music.py build/trilha.wav
 node render.js build/video_sem_audio.mp4
 ffmpeg -i build/video_sem_audio.mp4 -i build/trilha.wav -c:v copy -c:a aac -b:a 256k -shortest video/escola_sao_jose_logo_motion.mp4
