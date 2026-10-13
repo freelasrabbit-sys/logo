@@ -13,9 +13,16 @@ import { Captions } from "../components/Captions";
 import { COLORS, FONTS } from "../brand";
 import { Img } from "remotion";
 
+// Tamanho do vídeo para preencher a moldura sem faixas pretas (equivale a object-fit: cover)
+const coverSize = (sw: number, sh: number, cw: number, ch: number) => {
+  const k = Math.max(cw / sw, ch / sh);
+  return { width: sw * k, height: sh * k };
+};
+
 export type ClipProps = {
   src: string;
-  landscape: boolean;
+  srcWidth: number;
+  srcHeight: number;
   trimBefore: number;
   zoom: number;
   label: string | null;
@@ -54,19 +61,21 @@ const SpeakerTag: React.FC<{ label: string }> = ({ label }) => {
 /** Um trecho de depoimento dentro da moldura da identidade. */
 export const Clip: React.FC<ClipProps> = ({
   src,
-  landscape,
+  srcWidth,
+  srcHeight,
   trimBefore,
   zoom,
   label,
   captions,
 }) => {
+  const landscape = srcWidth > srcHeight;
   const card = landscape
     ? { width: 1000, height: 562, top: 560 }
     : { width: 860, height: 1490, top: 230 };
 
   return (
     <AbsoluteFill>
-      <Background />
+      <Background hideTopRight />
       <Img
         src={staticFile("brand/logo-capitulo-i.png")}
         style={{ position: "absolute", width: 150, right: 50, top: 40 }}
@@ -85,16 +94,22 @@ export const Clip: React.FC<ClipProps> = ({
           background: "#000",
         }}
       >
-        <Video
-          src={staticFile(src)}
-          trimBefore={trimBefore}
+        <AbsoluteFill
           style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
+            alignItems: "center",
+            justifyContent: "center",
             scale: String(zoom),
           }}
-        />
+        >
+          <Video
+            src={staticFile(src)}
+            trimBefore={trimBefore}
+            style={{
+              flexShrink: 0,
+              ...coverSize(srcWidth, srcHeight, card.width - 20, card.height - 20),
+            }}
+          />
+        </AbsoluteFill>
       </div>
       {label ? (
         <div

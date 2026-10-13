@@ -11,7 +11,8 @@ import edl from "./data/edl.json";
 
 export type Segment = {
   src: string;
-  landscape: boolean;
+  srcWidth: number;
+  srcHeight: number;
   trimBefore: number;
   durationInFrames: number;
   zoom: number;
@@ -70,7 +71,8 @@ export const Main: React.FC = () => {
           >
             <Clip
               src={seg.src}
-              landscape={seg.landscape}
+              srcWidth={seg.srcWidth}
+              srcHeight={seg.srcHeight}
               trimBefore={seg.trimBefore}
               zoom={seg.zoom}
               label={seg.newSpeaker ? seg.label : null}

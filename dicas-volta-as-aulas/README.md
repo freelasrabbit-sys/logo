@@ -1,54 +1,20 @@
-# Remotion video
+# Capítulo I — 30 anos (depoimentos)
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+Edição em Remotion dos depoimentos dos 30 anos da Escola Capítulo I, com a identidade visual da arte "Dicas · Volta às Aulas".
+Saída: `../video/capitulo_i_30_anos.mp4`, 1080x1920 (9:16), 30 fps, com menos de 3 minutos.
 
-Welcome to your Remotion project!
+## Estrutura
+- `src/data/edl.json`: lista de cortes (trechos de cada vídeo) e legendas. É gerado por `scripts/build_edl.py`.
+- `src/scenes/`: capa, moldura dos depoimentos (`Clip`) e encerramento.
+- `src/components/`: fundo da identidade, título estilo adesivo, logo e legendas.
+- `public/brand/logo-capitulo-i.png`: logo com fundo transparente.
+- `public/clips/`: vídeos brutos já padronizados. Não vão para o Git; veja abaixo.
 
-## Commands
+## Refazer do zero
+1. Padronize os vídeos (rotação, 30 fps, volume) para `public/clips/` com os nomes usados em `scripts/build_edl.py`:
+   `ffmpeg -i ORIGINAL.mp4 -vf fps=30 -af loudnorm=I=-16:TP=-1.5:LRA=11 -ar 48000 -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k public/clips/NOME.mp4`
+2. Transcreva com faster-whisper (modelo `medium`, `word_timestamps=True`) e salve o JSON.
+3. `python3 scripts/build_edl.py transcripts.json` para regenerar os cortes e as legendas.
+4. `npx remotion studio` para pré-visualizar ou `npx remotion render Video30Anos ../video/capitulo_i_30_anos.mp4 --crf=22`.
 
-**Install Dependencies**
-
-```console
-npm i --loglevel=error
-```
-
-**Start Preview**
-
-```console
-npm run dev
-```
-
-**Render video**
-
-```console
-npx remotion render
-```
-
-**Upgrade Remotion**
-
-```console
-npx remotion upgrade
-```
-
-## Docs
-
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
-
-## Help
-
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
-
-## Issues
-
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
-
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+Para mudar um corte, edite a lista `CUTS` em `scripts/build_edl.py`, em segundos do vídeo original, e rode o passo 3 de novo.

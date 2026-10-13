@@ -53,7 +53,9 @@ const Flask: React.FC = () => (
 );
 
 /** Fundo da identidade: degradê verde, retícula e ícones de ciência em traço. */
-export const Background: React.FC = () => {
+export const Background: React.FC<{ hideTopRight?: boolean }> = ({
+  hideTopRight = false,
+}) => {
   const frame = useCurrentFrame();
   const drift = interpolate(frame, [0, 600], [0, 30], {
     extrapolateRight: "extend",
@@ -105,6 +107,7 @@ export const Background: React.FC = () => {
       {/* Formas laranja nos cantos, como na capa */}
       <div
         style={{
+          display: hideTopRight ? "none" : "block",
           position: "absolute",
           right: -140,
           top: -150,
