@@ -17,7 +17,7 @@ export type Segment = {
   durationInFrames: number;
   zoom: number;
   label: string | null;
-  // true quando o trecho começa um novo depoimento (transição em vez de corte seco)
+  // true quando o trecho começa um novo depoimento (deslize em vez de esmaecer)
   newSpeaker: boolean;
   captions: Caption[];
 };
@@ -32,7 +32,7 @@ export type Edl = {
 export const EDL = edl as Edl;
 
 export const totalDuration = (e: Edl) => {
-  const transitions = e.segments.filter((s) => s.newSpeaker).length + 1;
+  const transitions = e.segments.length + 1;
   return (
     e.cover.durationInFrames +
     e.end.durationInFrames +
@@ -57,13 +57,14 @@ export const Main: React.FC = () => {
           <Cover title={EDL.cover.title} subtitle={EDL.cover.subtitle} />
         </TransitionSeries.Sequence>
         {EDL.segments.flatMap((seg, i) => [
-          seg.newSpeaker ? (
-            <TransitionSeries.Transition
-              key={`t${i}`}
-              presentation={i === 0 ? fade() : slide({ direction: "from-right" })}
-              timing={t}
-            />
-          ) : null,
+          // Todo corte esmaece; troca de depoimento desliza
+          <TransitionSeries.Transition
+            key={`t${i}`}
+            presentation={
+              seg.newSpeaker && i > 0 ? slide({ direction: "from-right" }) : fade()
+            }
+            timing={t}
+          />,
           <TransitionSeries.Sequence
             key={`s${i}`}
             name={`${seg.label ?? seg.src} #${i + 1}`}
@@ -74,6 +75,7 @@ export const Main: React.FC = () => {
               srcWidth={seg.srcWidth}
               srcHeight={seg.srcHeight}
               trimBefore={seg.trimBefore}
+              durationInFrames={seg.durationInFrames}
               zoom={seg.zoom}
               label={seg.newSpeaker ? seg.label : null}
               captions={seg.captions}

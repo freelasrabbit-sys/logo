@@ -1,7 +1,7 @@
 # Capítulo I — 30 anos (depoimentos)
 
 Edição em Remotion dos depoimentos dos 30 anos da Escola Capítulo I, com a identidade visual da arte "Dicas · Volta às Aulas".
-Saída: `../video/capitulo_i_30_anos.mp4`, 1080x1920 (9:16), 30 fps, com menos de 3 minutos.
+Saída: `../video/capitulo_i_30_anos.mp4`, 1080x1920 (9:16), 30 fps, cerca de 3min54s. Todo corte tem esmaecimento de imagem e áudio; a troca de depoimento desliza.
 
 ## Estrutura
 - `src/data/edl.json`: lista de cortes (trechos de cada vídeo) e legendas. É gerado por `scripts/build_edl.py`.

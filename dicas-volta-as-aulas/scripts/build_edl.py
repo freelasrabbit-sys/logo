@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 FPS = 30
-TRANSITION = 12  # frames de transição entre depoimentos
+TRANSITION = 12  # frames de esmaecimento/transição em cada corte
 PAD_IN, PAD_OUT = 0.12, 0.25  # respiro antes/depois de cada trecho (s)
 
 # chave da transcrição -> arquivo em public/clips, tamanho (px) e identificação
@@ -22,26 +22,28 @@ SOURCES = {
     "464fb1ac": ("clips/professora-rosangela.mp4", 480, 848, "Rosângela · ex-professora"),
     "397c8cbe": ("clips/professora-juscelia.mp4", 576, 1024, "Juscelia · ex-professora"),
     "6f98fa35": ("clips/familia.mp4", 1024, 576, "Eric e Raquel · pais de ex-alunos"),
+    "4886ecc3": ("clips/casal.mp4", 576, 1024, "Pais da Isabela e do Henrique"),
 }
 
 # (fonte, início, fim) em segundos — a ordem aqui é a ordem do vídeo
 CUTS = [
-    # Ex-alunos: apresentação, cresceram junto com a escola, orgulho
+    # Ex-alunos: apresentação, cresceram junto com a escola
     ("3aa6d4bc", 0.6, 12.3),
     ("3aa6d4bc", 17.8, 34.5),
-    ("3aa6d4bc", 63.9, 70.1),
-    # Ex-aluna: 10 anos na escola, segunda casa, orgulho
+    # Pais da Isabela e do Henrique: parabéns, Bela foi a aluna nº 1, carinho, confiança
+    ("4886ecc3", 1.0, 35.5),
+    ("4886ecc3", 64.2, 69.4),
+    ("4886ecc3", 83.3, 92.8),
+    # Ex-aluna: 10 anos na escola, segunda casa
     ("23e02f9a", 1.9, 16.8),
     ("23e02f9a", 39.1, 43.4),
-    ("23e02f9a", 84.4, 88.5),
     # Prof. Rosângela: depoimento completo, sem a pausa
     ("464fb1ac", 0.7, 13.9),
     ("464fb1ac", 15.1, 25.9),
-    # Prof. Juscelia: apresentação, gerações de crianças, aprendizados, fecho
-    ("397c8cbe", 0.0, 11.0),
-    ("397c8cbe", 11.7, 20.9),
-    ("397c8cbe", 68.2, 81.3),
-    ("397c8cbe", 98.2, 104.7),
+    # Prof. Juscelia: apresentação, gerações de crianças, aprendizados,
+    # agradecimento à Dona Vera e à Fernanda (mantido inteiro) e fecho
+    ("397c8cbe", 0.0, 20.9),
+    ("397c8cbe", 68.2, 104.7),
     # Família: 14 anos, gratidão, fazem parte da história, despedida
     ("6f98fa35", 0.0, 17.8),
     ("6f98fa35", 22.7, 30.2),
@@ -55,6 +57,8 @@ FIXES = [
     (r"\b[Cc]ap[íi]tulo 1\b", "Capítulo I"),
     (r"\bcapítulo\b", "Capítulo"),
     (r"\bhistorias\b", "histórias"),
+    (r"\bcaim\b", "carinho"),
+    (r"\bHenrico\b", "Henrique"),
 ]
 
 
@@ -79,9 +83,9 @@ def main() -> None:
         start, end = ws[0][0], ws[-1][1]
         new_speaker = key != prev_src
         nth = 0 if new_speaker else nth + 1
-        next_new = i + 1 == len(CUTS) or CUTS[i + 1][0] != key
-        pad_in = PAD_IN + (TRANSITION / FPS if new_speaker else 0)
-        pad_out = PAD_OUT + (TRANSITION / FPS if next_new else 0)
+        # todo corte tem esmaecimento: sobra de imagem dos dois lados para a sobreposição
+        pad_in = PAD_IN + TRANSITION / FPS
+        pad_out = PAD_OUT + TRANSITION / FPS
         t0 = max(0.0, start - pad_in)
         t1 = end + pad_out
         trim = round(t0 * FPS)
@@ -114,7 +118,7 @@ def main() -> None:
                 "srcHeight": height,
                 "trimBefore": trim,
                 "durationInFrames": dur,
-                # alterna o enquadramento a cada corte seco para disfarçar o "pulo"
+                # alterna o enquadramento a cada corte para disfarçar o "pulo"
                 "zoom": 1.0 if nth % 2 == 0 else 1.08,
                 "label": label,
                 "newSpeaker": new_speaker,
@@ -131,7 +135,7 @@ def main() -> None:
         edl["cover"]["durationInFrames"]
         + edl["end"]["durationInFrames"]
         + sum(s["durationInFrames"] for s in segments)
-        - TRANSITION * (sum(s["newSpeaker"] for s in segments) + 1)
+        - TRANSITION * (len(segments) + 1)
     )
     print(f"{len(segments)} trechos, duração total {total / FPS:.1f}s")
 

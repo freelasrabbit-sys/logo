@@ -19,11 +19,14 @@ const coverSize = (sw: number, sh: number, cw: number, ch: number) => {
   return { width: sw * k, height: sh * k };
 };
 
+const AUDIO_FADE = 12;
+
 export type ClipProps = {
   src: string;
   srcWidth: number;
   srcHeight: number;
   trimBefore: number;
+  durationInFrames: number;
   zoom: number;
   label: string | null;
   captions: Caption[];
@@ -64,6 +67,7 @@ export const Clip: React.FC<ClipProps> = ({
   srcWidth,
   srcHeight,
   trimBefore,
+  durationInFrames,
   zoom,
   label,
   captions,
@@ -104,6 +108,15 @@ export const Clip: React.FC<ClipProps> = ({
           <Video
             src={staticFile(src)}
             trimBefore={trimBefore}
+            // Áudio também esmaece nas bordas, acompanhando a transição de imagem
+            volume={(f) =>
+              interpolate(
+                f,
+                [0, AUDIO_FADE, durationInFrames - AUDIO_FADE, durationInFrames],
+                [0, 1, 1, 0],
+                { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+              )
+            }
             style={{
               flexShrink: 0,
               ...coverSize(srcWidth, srcHeight, card.width - 20, card.height - 20),
