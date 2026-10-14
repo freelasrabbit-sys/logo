@@ -24,3 +24,17 @@ NODE_PATH=$(npm root -g) node render.js video/capitulo1_abertura_depoimentos.mp4
 # quadros soltos para conferência:
 NODE_PATH=$(npm root -g) node render.js build/st --stills 1.0,2.4,4.8
 ```
+
+# Feliz Dia dos Professores — Abertura
+
+`professores/video/feliz_dia_dos_professores_abertura.mp4` — 5 s, 1080x1920 (9:16), 60 fps, H.264, sem áudio.
+
+`professores/prep.py` separa a capa (`assets/referencia_capa.jpg`) em camadas (quadro-negro
+limpo, avião, maçã, nuvem e cada letra) em `professores/layers/`; `abertura.html` anima e
+`render.js` captura os quadros:
+
+```bash
+cd professores
+python3 prep.py
+NODE_PATH=$(npm root -g) node render.js video/feliz_dia_dos_professores_abertura.mp4
+```

@@ -1,0 +1,407 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Feliz Dia dos Professores — abertura</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+/* Abertura "Feliz Dia dos Professores": 5 s, 1080x1920.
+ * As camadas vêm de prep.py (layers/). render(t) desenha o instante t de forma
+ * determinística; render.js captura os quadros com o Playwright. */
+const W = 1080, H = 1920, DUR = 5.0;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ------------------------------------------------------------ easing
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const eOutCubic = x => 1 - (1 - x) ** 3;
+const eInOutCubic = x => x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2;
+const eOutExpo = x => x >= 1 ? 1 : 1 - 2 ** (-10 * x);
+const eOutBack = (x, k = 1.70158) => 1 + (k + 1) * (x - 1) ** 3 + k * (x - 1) ** 2;
+const eOutElastic = x => x <= 0 ? 0 : x >= 1 ? 1 :
+  2 ** (-9 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI / 3.4)) + 1;
+const TAU = Math.PI * 2;
+
+function mulberry(seed) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let r = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    r = r + Math.imul(r ^ r >>> 7, 61 | r) ^ r;
+    return ((r ^ r >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function mk(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+let M = null;            // layers.json
+const IMG = {};          // camadas carregadas
+
+// desenha a camada `n` com escala/rotação em torno de (ax, ay) e deslocamento (dx, dy)
+function put(g, n, { ax, ay, s = 1, sx = 1, sy = 1, rot = 0, dx = 0, dy = 0, alpha = 1 } = {}) {
+  const L = M[n];
+  if (alpha <= 0.001 || s * sx <= 0.001 || s * sy <= 0.001) return;
+  if (ax === undefined) { ax = L.x + L.w / 2; ay = L.y + L.h / 2; }
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(ax + dx, ay + dy);
+  g.rotate(rot);
+  g.scale(s * sx, s * sy);
+  g.drawImage(IMG[n], L.x - ax, L.y - ay);
+  g.restore();
+}
+
+// ------------------------------------------------------------ poeira de giz
+const DUST = (() => {
+  const r = mulberry(5), out = [];
+  for (let i = 0; i < 90; i++) {
+    out.push({ x: r() * W, y: r() * H, s: 0.8 + r() * 2.4, a: 0.08 + r() * 0.3,
+               v: 6 + r() * 22, ph: r() * TAU });
+  }
+  return out;
+})();
+
+function drawDust(g, t) {
+  g.fillStyle = '#f2f2ee';
+  for (const P of DUST) {
+    const x = P.x + 14 * Math.sin(t * 0.7 + P.ph);
+    const y = ((P.y - P.v * t) % H + H) % H;
+    g.globalAlpha = P.a * (0.6 + 0.4 * Math.sin(t * 2 + P.ph)) * prog(t, 0.1, 0.8);
+    g.beginPath();
+    g.arc(x, y, P.s, 0, TAU);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+}
+
+// nuvenzinhas de pó de giz nos impactos
+const PUFFS = [];
+function puff(x, y, t0, n, spread, seed, col = '240,240,235') {
+  const r = mulberry(seed);
+  for (let i = 0; i < n; i++) {
+    const a = r() * TAU;
+    PUFFS.push({ x, y, t0: t0 + r() * 0.05, a, v: spread * (0.5 + r()), s: 3 + r() * 7,
+                 life: 0.5 + r() * 0.5, col, up: 20 + r() * 40 });
+  }
+}
+
+function drawPuffs(g, t) {
+  for (const P of PUFFS) {
+    const p = prog(t, P.t0, P.t0 + P.life);
+    if (p <= 0 || p >= 1) continue;
+    const d = P.v * eOutCubic(p);
+    const x = P.x + Math.cos(P.a) * d, y = P.y + Math.sin(P.a) * d * 0.6 - P.up * p;
+    g.fillStyle = `rgba(${P.col},${0.55 * (1 - p) ** 1.5})`;
+    g.beginPath();
+    g.arc(x, y, P.s * (1 + p * 1.8), 0, TAU);
+    g.fill();
+  }
+}
+
+// traço de giz (risco tracejado com textura leve)
+function chalkStroke(g, pts, width, alpha, dash) {
+  if (pts.length < 2) return;
+  g.save();
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.setLineDash(dash || []);
+  for (const [w, a, j] of [[width, alpha, 0], [width * 0.55, alpha * 0.8, 1.6]]) {
+    g.lineWidth = w;
+    g.strokeStyle = `rgba(242,242,236,${a})`;
+    g.beginPath();
+    pts.forEach(([x, y], i) => {
+      const jx = j * Math.sin(i * 1.7), jy = j * Math.cos(i * 2.3);
+      i ? g.lineTo(x + jx, y + jy) : g.moveTo(x + jx, y + jy);
+    });
+    g.stroke();
+  }
+  g.restore();
+}
+
+// ------------------------------------------------------------ avião de papel
+// caminho Catmull-Rom com um loop antes de pousar na posição final
+const PLANE_PTS = [[-420, 1060], [-80, 930], [260, 820], [520, 650], [560, 470], [420, 380],
+                   [260, 450], [190, 580], [205, 667]];
+function catmull(pts, u) {
+  const n = pts.length - 1;
+  const f = clamp(u) * n, i = Math.min(n - 1, Math.floor(f)), k = f - i;
+  const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(n, i + 2)];
+  const c = (a, b, cc, d) => 0.5 * ((2 * b) + (-a + cc) * k + (2 * a - 5 * b + 4 * cc - d) * k * k
+                                    + (-a + 3 * b - 3 * cc + d) * k * k * k);
+  return [c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])];
+}
+const T_PLANE0 = 0.2, T_PLANE1 = 1.55;
+const planeU = t => eInOutCubic(prog(t, T_PLANE0, T_PLANE1)) ** 0.85;
+
+function drawPlane(g, t) {
+  const u = planeU(t);
+  if (t < T_PLANE0) return;
+  // trilha tracejada de giz
+  const fade = 1 - prog(t, 1.7, 2.4);
+  if (fade > 0) {
+    const pts = [];
+    const u0 = Math.max(0, u - 0.75);
+    for (let k = 0; k <= 80; k++) pts.push(catmull(PLANE_PTS, lerp(u0, u, k / 80)));
+    pts.length = Math.max(0, pts.length - 4); // não encosta na cauda
+    chalkStroke(g, pts, 6, 0.55 * fade, [16, 14]);
+  }
+  const [x, y] = catmull(PLANE_PTS, u);
+  const [x2, y2] = catmull(PLANE_PTS, Math.min(1, u + 0.01));
+  let ang = Math.atan2(y2 - y, x2 - x);
+  if (u >= 1) ang = 0;
+  const settle = eOutCubic(prog(t, T_PLANE1 - 0.45, T_PLANE1));
+  ang = lerp(ang, 0, settle);
+  const hover = prog(t, T_PLANE1, T_PLANE1 + 0.6);
+  const bob = 7 * Math.sin((t - T_PLANE1) * 2.4) * hover;
+  const tilt = 0.035 * Math.sin((t - T_PLANE1) * 2.4 + 0.8) * hover;
+  const s = lerp(0.55, 1, eOutCubic(prog(t, T_PLANE0, T_PLANE1)));
+  // a âncora é o centro do avião, a ponta fica à direita
+  put(g, 'aviao', { ax: 200, ay: 667, dx: x - 205, dy: y - 667 + bob, rot: ang + tilt, s,
+                    sy: 1 - 0.25 * Math.abs(Math.sin(ang)) * (1 - settle) });
+}
+
+// ------------------------------------------------------------ maçã
+const T_APPLE = 0.65, APPLE_LAND = 1.12;
+function drawApple(g, t) {
+  if (t < T_APPLE) return;
+  const L = M.maca;
+  const ax = L.x + L.w / 2, ay = L.y + L.h; // base da maçã
+  let dy = 0, sx = 1, sy = 1, rot = 0;
+  if (t < APPLE_LAND) {
+    const p = prog(t, T_APPLE, APPLE_LAND);
+    dy = -950 * (1 - p * p);
+    sy = 1.12; sx = 0.92;
+    rot = -0.4 * (1 - p);
+  } else {
+    const p = prog(t, APPLE_LAND, APPLE_LAND + 0.9);
+    const sq = Math.exp(-6 * p) * Math.cos(p * 22);
+    sx = 1 + 0.2 * sq; sy = 1 - 0.22 * sq;
+    dy = -60 * Math.abs(Math.sin(p * Math.PI * 2.2)) * Math.exp(-5 * p);
+    rot = 0.05 * Math.sin(t * 2.1) * prog(t, 1.6, 2.4);
+  }
+  dy += 6 * Math.sin((t - 2) * 1.9) * prog(t, 1.9, 2.8);
+  put(g, 'maca', { ax, ay, dy, sx, sy, rot });
+  // risquinhos de giz de impacto ao redor da maçã
+  const pi = prog(t, APPLE_LAND, APPLE_LAND + 0.55);
+  if (pi > 0 && pi < 1) {
+    const e = eOutCubic(pi);
+    for (let k = 0; k < 5; k++) {
+      const a = -Math.PI / 2 + (k - 2) * 0.45;
+      const r0 = 105 + 40 * e, r1 = r0 + 34 * (1 - pi);
+      const cx = ax, cy = ay - 95;
+      chalkStroke(g, [[cx + Math.cos(a) * r0, cy + Math.sin(a) * r0],
+                      [cx + Math.cos(a) * r1, cy + Math.sin(a) * r1]], 6, 0.85 * (1 - pi));
+    }
+  }
+}
+
+// ------------------------------------------------------------ nuvem
+const cloudBuf = mk(260, 260), cbx = cloudBuf.getContext('2d');
+function drawCloud(g, t) {
+  const p = prog(t, 0.35, 1.45);
+  if (p <= 0) return;
+  const L = M.nuvem;
+  // revela como se estivesse sendo pintada com giz: máscara orgânica crescendo
+  cbx.setTransform(1, 0, 0, 1, 0, 0);
+  cbx.clearRect(0, 0, 260, 260);
+  cbx.globalCompositeOperation = 'source-over';
+  cbx.drawImage(IMG.nuvem, 0, 0);
+  if (p < 1) {
+    cbx.globalCompositeOperation = 'destination-in';
+    const R = 260 * eOutCubic(p);
+    const r = mulberry(9);
+    cbx.fillStyle = '#000';
+    for (let k = 0; k < 14; k++) {
+      const a = r() * TAU, d = r() * 70;
+      cbx.beginPath();
+      cbx.arc(110 + Math.cos(a) * d, 110 + Math.sin(a) * d, R * (0.45 + 0.4 * r()), 0, TAU);
+      cbx.fill();
+    }
+  }
+  const dx = 260 * (1 - eOutCubic(p)) + 10 * Math.sin(t * 0.9) * prog(t, 1.5, 2.3);
+  const dy = 5 * Math.sin(t * 1.3 + 1);
+  g.save();
+  g.globalAlpha = Math.min(1, p * 3);
+  g.drawImage(cloudBuf, 0, 0, L.w, L.h, L.x + dx, L.y + dy, L.w, L.h);
+  g.restore();
+}
+
+// ------------------------------------------------------------ textos
+const T_FELIZ = 1.25, T_DIA = 1.58, T_DOS = 1.82, T_PROF = 2.0, T_PILL = 2.55;
+
+function stamp(g, n, t0, i, t) {
+  const p = prog(t, t0, t0 + 0.42);
+  if (p <= 0) return;
+  const s = lerp(2.4, 1, eOutBack(p, 1.4));
+  const wave = 5 * Math.sin(t * 4.2 - i * 0.55) * prog(t, 3.3, 3.8) * (1 - prog(t, 4.4, 4.9));
+  put(g, n, { s, rot: (1 - eOutCubic(p)) * (i % 2 ? 0.25 : -0.25), alpha: Math.min(1, p * 3.5),
+              dy: -wave });
+}
+
+function drawTexts(g, t) {
+  M._order.feliz.forEach((n, i) => stamp(g, n, T_FELIZ + i * 0.06, i, t));
+  M._order.dia.forEach((n, i) => stamp(g, n, T_DIA + i * 0.06, i + 5, t));
+
+  // selo DOS
+  const B = M._box;
+  const pb = prog(t, T_DOS, T_DOS + 0.55);
+  if (pb > 0) {
+    const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2;
+    const s = eOutElastic(pb);
+    g.save();
+    g.translate(cx, cy);
+    g.rotate((1 - eOutCubic(pb)) * -0.6);
+    g.scale(s, s);
+    g.fillStyle = `rgb(${B.color})`;
+    g.fillRect(B.x0 - cx, B.y0 - cy, B.x1 - B.x0, B.y1 - B.y0);
+    g.restore();
+    const pt = prog(t, T_DOS + 0.12, T_DOS + 0.5);
+    put(g, 'dos_txt', { s: s * eOutBack(pt, 2.5), ax: cx, ay: cy, rot: (1 - eOutCubic(pb)) * -0.6 });
+  }
+
+  // PROFESSORES sobe letra a letra
+  M._order.prof.forEach((n, i) => {
+    const t0 = T_PROF + i * 0.045;
+    const p = prog(t, t0, t0 + 0.5);
+    if (p <= 0) return;
+    const L = M[n];
+    const wave = 6 * Math.sin(t * 4.2 - i * 0.5 - 1.5) * prog(t, 3.4, 3.9) * (1 - prog(t, 4.4, 4.9));
+    put(g, n, { ax: L.x + L.w / 2, ay: L.y + L.h, dy: 110 * (1 - eOutBack(p, 2.2)) - wave,
+                sx: lerp(0.6, 1, eOutBack(p, 2)), sy: lerp(1.5, 1, eOutCubic(p)),
+                alpha: Math.min(1, p * 4) });
+  });
+
+  // pílula da data: abre do centro e o texto revela da esquerda p/ direita
+  const P = M._pill;
+  const pp = eOutBack(prog(t, T_PILL, T_PILL + 0.5), 1.6);
+  if (pp > 0) {
+    const cx = (P.x0 + P.x1) / 2, h = P.y1 - P.y0;
+    const w = Math.max(h, (P.x1 - P.x0) * pp);
+    const sc = eOutBack(prog(t, T_PILL, T_PILL + 0.25), 2);
+    g.save();
+    g.translate(cx, (P.y0 + P.y1) / 2);
+    g.scale(sc, sc);
+    g.fillStyle = `rgb(${P.color})`;
+    g.beginPath();
+    g.roundRect(-w / 2, -h / 2, w, h, h / 2);
+    g.fill();
+    g.restore();
+    const pd = eOutCubic(prog(t, T_PILL + 0.25, T_PILL + 0.8));
+    if (pd > 0) {
+      const D = M.data_txt;
+      g.save();
+      g.beginPath();
+      g.rect(D.x - 5, D.y - 10, (D.w + 10) * pd, D.h + 20);
+      g.clip();
+      put(g, 'data_txt', { dx: -20 * (1 - pd) });
+      g.restore();
+    }
+  }
+}
+
+// brilho passando pelos textos
+const fx = mk(W, H), fxx = fx.getContext('2d');
+function drawTextLayer(g, t) {
+  fxx.setTransform(1, 0, 0, 1, 0, 0);
+  fxx.clearRect(0, 0, W, H);
+  drawTexts(fxx, t);
+  const sh = prog(t, 3.0, 3.75);
+  if (sh > 0 && sh < 1) {
+    fxx.save();
+    fxx.globalCompositeOperation = 'source-atop';
+    const x = lerp(-50, 1150, eInOutCubic(sh));
+    const gr = fxx.createLinearGradient(x - 110, 800, x + 110, 1150);
+    gr.addColorStop(0, 'rgba(255,255,255,0)');
+    gr.addColorStop(0.5, 'rgba(255,255,255,0.6)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    fxx.fillStyle = gr;
+    fxx.fillRect(0, 780, W, 400);
+    fxx.restore();
+  }
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.35)';
+  g.shadowBlur = 18;
+  g.shadowOffsetY = 6;
+  g.drawImage(fx, 0, 0);
+  g.restore();
+}
+
+// ------------------------------------------------------------ cena
+function camera(t) {
+  let Z = 1.08 - 0.08 * eOutCubic(prog(t, 0, 4.8));
+  // tranco leve quando o selo DOS bate
+  const k = prog(t, T_DOS + 0.05, T_DOS + 0.5);
+  const shake = k > 0 && k < 1 ? Math.sin(k * 30) * (1 - k) ** 2 : 0;
+  return { Z: Z + 0.012 * shake, sx: 5 * shake, sy: -4 * shake };
+}
+
+function render(t) {
+  t = clamp(t, 0, DUR);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  const cam = camera(t);
+  ctx.translate(540 + cam.sx, 960 + cam.sy);
+  ctx.scale(cam.Z, cam.Z);
+  ctx.translate(-540, -960);
+
+  ctx.globalAlpha = eOutCubic(prog(t, 0, 0.45));
+  ctx.drawImage(IMG.bg, 0, 0);
+  ctx.globalAlpha = 1;
+  drawDust(ctx, t);
+  drawCloud(ctx, t);
+  drawPlane(ctx, t);
+  drawApple(ctx, t);
+  drawTextLayer(ctx, t);
+  drawPuffs(ctx, t);
+}
+
+// ------------------------------------------------------------ boot
+window.ready = (async () => {
+  M = await (await fetch('layers/layers.json')).json();
+  const names = ['bg', ...Object.keys(M).filter(k => !k.startsWith('_'))];
+  await Promise.all(names.map(async n => {
+    const im = new Image();
+    im.src = `layers/${n}.png`;
+    await im.decode();
+    IMG[n] = im;
+  }));
+  // pó de giz nos impactos
+  M._order.feliz.forEach((n, i) => {
+    const L = M[n];
+    puff(L.x + L.w / 2, L.y + L.h, T_FELIZ + i * 0.06 + 0.16, 6, 70, 100 + i);
+  });
+  M._order.dia.forEach((n, i) => {
+    const L = M[n];
+    puff(L.x + L.w / 2, L.y + L.h, T_DIA + i * 0.06 + 0.16, 6, 70, 200 + i);
+  });
+  puff(520, 735, APPLE_LAND, 14, 110, 300);
+  puff(638, 937, T_DOS + 0.08, 16, 140, 400, '250,190,210');
+  puff(205, 700, T_PLANE1 - 0.05, 10, 90, 500);
+  return true;
+})();
+
+if (!navigator.webdriver) {
+  window.ready.then(() => {
+    const start = performance.now();
+    const loop = now => {
+      render(((now - start) / 1000) % (DUR + 1));
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+}
+</script>
+</body>
+</html>
