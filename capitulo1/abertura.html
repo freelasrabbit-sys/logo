@@ -1,0 +1,626 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Capítulo I — abertura depoimentos</title>
+<style>
+  @font-face { font-family: 'Fredoka'; font-weight: 700; src: url(assets/Fredoka-Bold.ttf); }
+  @font-face { font-family: 'Open Sans'; font-weight: 800; src: url(assets/OpenSans-ExtraBold.ttf); }
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+/* Abertura "depoimentos — Capítulo I 30 anos": 4.8 s, 1080x1920.
+ * Tudo é desenhado por render(t) de forma determinística; render.js captura
+ * os quadros com o Playwright. Abrindo o arquivo no navegador, toca em loop. */
+const W = 1080, H = 1920, DUR = 4.8;
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+// ------------------------------------------------------------ easing
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const eOutCubic = x => 1 - (1 - x) ** 3;
+const eInOutCubic = x => x < 0.5 ? 4 * x ** 3 : 1 - (-2 * x + 2) ** 3 / 2;
+const eOutExpo = x => x >= 1 ? 1 : 1 - 2 ** (-10 * x);
+const eOutBack = (x, k = 1.70158) => 1 + (k + 1) * (x - 1) ** 3 + k * (x - 1) ** 2;
+const eOutElastic = x => x <= 0 ? 0 : x >= 1 ? 1 :
+  2 ** (-9 * x) * Math.sin((x * 10 - 0.75) * (2 * Math.PI / 3.4)) + 1;
+const TAU = Math.PI * 2;
+
+function mulberry(seed) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let r = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    r = r + Math.imul(r ^ r >>> 7, 61 | r) ^ r;
+    return ((r ^ r >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ------------------------------------------------------------ paleta
+const C = {
+  dark: '#2d6a58',
+  teal: '#5a937a',
+  vein: '#5f977c',
+  olive: '#a2bc6b',
+  leaf: 'rgba(158,188,96,0.86)',
+  orange: '#ff6d00',
+  orange2: '#ff9022',
+  yellow: '#f6e23a',
+  outline: '#3e816c',
+  dot: 'rgba(196,212,92,0.55)',
+};
+
+function mk(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+// caminho fechado suave por pontos (midpoints + quadráticas)
+function smoothClosed(g, pts) {
+  const n = pts.length;
+  g.beginPath();
+  let m = [(pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2];
+  g.moveTo(m[0], m[1]);
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n];
+    g.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+  }
+  g.closePath();
+}
+
+function blob(g, cx, cy, R, t, seed, amp = 0.08, n = 90) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const th = i / n * TAU;
+    const k = 0.55 * Math.sin(3 * th + seed + t * 1.7)
+            + 0.30 * Math.sin(5 * th - seed * 1.3 - t * 1.1)
+            + 0.15 * Math.sin(8 * th + seed * 2.1 + t * 2.3);
+    const r = R * (1 + amp * k);
+    pts.push([cx + r * Math.cos(th), cy + r * Math.sin(th)]);
+  }
+  smoothClosed(g, pts);
+}
+
+// ------------------------------------------------------------ fundo
+const bg = mk(W, H), bgx = bg.getContext('2d');
+const REVEAL_C = [540, 1040];
+
+function curve1(x, t, k) { // borda da faixa clara superior-direita
+  return 1165 + 275 * (x / W) ** 1.3 + 16 * Math.sin(x / 230 + t * 1.3) + k;
+}
+function curve2(x, t, k) { // borda da faixa inferior
+  return 1585 + 115 * (x / W) + 14 * Math.sin(x / 260 - t * 1.1 + 1.7) + k;
+}
+
+function drawBackground(g, t) {
+  // gradiente base
+  let gr = g.createLinearGradient(0, 500, W, 1100);
+  gr.addColorStop(0, '#558f78');
+  gr.addColorStop(0.5, '#66997a');
+  gr.addColorStop(1, '#8aad74');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+  gr = g.createRadialGradient(1080, 0, 0, 1080, 0, 900);
+  gr.addColorStop(0, 'rgba(160,190,110,0.55)');
+  gr.addColorStop(1, 'rgba(160,190,110,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+
+  // formas orgânicas flutuantes (bem sutis)
+  const fl = [
+    [180, 520, 260, 0.6, 'rgba(170,200,110,0.07)'],
+    [880, 820, 300, 2.1, 'rgba(120,175,130,0.08)'],
+    [300, 1450, 280, 4.0, 'rgba(190,210,110,0.06)'],
+  ];
+  fl.forEach(([x, y, r, s, col], i) => {
+    const dx = 40 * Math.sin(t * 0.7 + s), dy = 30 * Math.cos(t * 0.6 + s * 1.3);
+    blob(g, x + dx, y + dy, r * (0.9 + 0.1 * Math.sin(t + i)), t * 0.8, s, 0.16);
+    g.fillStyle = col;
+    g.fill();
+  });
+
+  // faixas onduladas: entram deslizando e continuam fluindo
+  const e1 = eOutCubic(prog(t, 0.15, 1.15));
+  const e2 = eOutCubic(prog(t, 0.3, 1.25));
+  const k1 = (1 - e1) * 420, k2 = (1 - e2) * 380;
+  g.save();
+  g.beginPath();
+  g.moveTo(0, 0); g.lineTo(W, 0);
+  for (let x = W; x >= 0; x -= 20) g.lineTo(x, curve1(x, t, k1));
+  g.closePath();
+  g.clip();
+  gr = g.createRadialGradient(1120, 1260, 0, 1120, 1260, 820);
+  gr.addColorStop(0, 'rgba(170,196,108,0.75)');
+  gr.addColorStop(0.55, 'rgba(160,190,108,0.35)');
+  gr.addColorStop(1, 'rgba(160,190,108,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+  g.restore();
+
+  g.save();
+  g.beginPath();
+  g.moveTo(0, H); g.lineTo(W, H);
+  for (let x = W; x >= 0; x -= 20) g.lineTo(x, curve2(x, t, k2));
+  g.closePath();
+  gr = g.createLinearGradient(0, 1900, W, 1650);
+  gr.addColorStop(0, 'rgba(70,130,110,0.25)');
+  gr.addColorStop(1, 'rgba(160,190,110,0.45)');
+  g.fillStyle = gr;
+  g.fill();
+  g.restore();
+  // faixa escura logo abaixo da curva 1
+  g.save();
+  g.beginPath();
+  for (let x = 0; x <= W; x += 20) g.lineTo(x, curve1(x, t, k1));
+  for (let x = W; x >= 0; x -= 20) g.lineTo(x, curve1(x, t, k1) + 120 + 20 * Math.sin(x / 300 + t));
+  g.closePath();
+  g.fillStyle = 'rgba(70,128,105,0.10)';
+  g.fill();
+  g.restore();
+
+  // retícula de pontos (halftone) que surge em onda a partir do centro
+  const S = 11, ca = Math.SQRT1_2;
+  const maxR = 2.5;
+  g.fillStyle = C.dot;
+  g.beginPath();
+  const span = 1600;
+  for (let i = -span / S; i < span / S; i++) {
+    for (let j = -span / S; j < span / S; j++) {
+      const u = i * S, v = j * S;
+      const x = 540 + (u - v) * ca, y = 960 + (u + v) * ca;
+      if (x < -4 || x > W + 4 || y < -4 || y > H + 4) continue;
+      const d = Math.hypot(x - REVEAL_C[0], y - REVEAL_C[1]);
+      const t0 = 0.25 + d / 2400;
+      const rv = prog(t, t0, t0 + 0.45);
+      if (rv <= 0) continue;
+      const dens = 0.55 + 0.45 * clamp((x / W) * 0.7 + Math.max(0, 1300 - y) / 2600 * 0.3
+                  + 0.25 * Math.sin(x * 0.006 + y * 0.003));
+      const ripple = 1 + 0.35 * Math.sin(d * 0.018 - t * 5.5) * prog(t, 1.2, 2.2);
+      const r = maxR * dens * eOutBack(rv, 2.5) * ripple;
+      if (r < 0.25) continue;
+      g.moveTo(x + r, y);
+      g.arc(x, y, r, 0, TAU);
+    }
+  }
+  g.fill();
+}
+
+// ------------------------------------------------------------ folhas
+// base (x,y), ângulo (graus), comprimento, largura, início, fase do balanço, cor, nervura
+const LEAVES = [
+  // canto superior esquerdo
+  { x: 130, y: -70, a: 104, len: 380, w: 120, t0: 0.30, ph: 0.0 },
+  { x: 92, y: 172, a: -13, len: 265, w: 96, t0: 0.42, ph: 1.3 },
+  // canto superior direito
+  { x: 965, y: 125, a: 63, len: 350, w: 118, t0: 0.50, ph: 2.1 },
+  { x: 1010, y: 235, a: 146, len: 330, w: 112, t0: 0.60, ph: 3.0 },
+  // canto inferior esquerdo
+  { x: 60, y: 1770, a: 96, len: 250, w: 92, t0: 0.55, ph: 4.2 },
+  { x: -40, y: 1715, a: 62, len: 330, w: 112, t0: 0.70, ph: 5.1, col: C.orange2, vein: '#f26800' },
+  { x: 95, y: 1765, a: 22, len: 265, w: 96, t0: 0.78, ph: 0.7 },
+];
+
+function leafShape(g, len, w) {
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.bezierCurveTo(len * 0.28, -w * 1.05, len * 0.78, -w * 0.75, len, 0);
+  g.bezierCurveTo(len * 0.74, w * 0.72, len * 0.3, w * 0.95, 0, 0);
+  g.closePath();
+}
+
+function drawLeaf(g, L, t) {
+  const p = prog(t, L.t0, L.t0 + 0.75);
+  if (p <= 0) return;
+  const s = eOutBack(p, 1.9);
+  const sway = (2.2 * Math.sin(t * 1.5 + L.ph) + 1.2 * Math.sin(t * 2.6 + L.ph * 1.7)) * Math.PI / 180;
+  const rot = L.a * Math.PI / 180 + (1 - eOutCubic(p)) * -0.7 + sway;
+  g.save();
+  g.translate(L.x, L.y);
+  g.rotate(rot);
+  g.scale(s, s * (1 + 0.04 * Math.sin(t * 2 + L.ph)));
+  leafShape(g, L.len, L.w);
+  g.fillStyle = L.col || C.leaf;
+  g.fill();
+  // nervura central (fenda mostrando o fundo)
+  const vl = L.len * 0.82 * eOutCubic(prog(t, L.t0 + 0.15, L.t0 + 0.8));
+  if (vl > 1) {
+    g.beginPath();
+    g.moveTo(L.len * 0.02, 0);
+    g.quadraticCurveTo(vl * 0.5, -L.w * 0.16, vl, -L.w * 0.02);
+    g.lineCap = 'round';
+    g.lineWidth = L.w * 0.11;
+    g.strokeStyle = L.vein || C.vein;
+    g.stroke();
+  }
+  g.restore();
+}
+
+function drawRing(g, t) {
+  const p = eInOutCubic(prog(t, 0.35, 1.15));
+  if (p <= 0) return;
+  const cx = 1005 + 6 * Math.sin(t * 1.2), cy = 32 + 5 * Math.cos(t * 1.4);
+  const a0 = 0.35 * Math.PI;
+  const w = 72 * (0.4 + 0.6 * eOutBack(prog(t, 0.35, 0.95), 2));
+  g.save();
+  g.lineCap = 'round';
+  g.lineWidth = w;
+  const gr = g.createLinearGradient(cx - 170, cy, cx + 170, cy + 170);
+  gr.addColorStop(0, C.orange);
+  gr.addColorStop(1, '#ff8410');
+  g.strokeStyle = gr;
+  g.beginPath();
+  g.arc(cx, cy, 132, a0, a0 + p * TAU);
+  g.stroke();
+  g.restore();
+}
+
+// ------------------------------------------------------------ partículas
+const PARTS = (() => {
+  const r = mulberry(11), out = [];
+  const cols = [C.yellow, C.orange2, '#ffffff', '#b9d66e', C.orange];
+  for (let i = 0; i < 22; i++) {
+    const a = r() * TAU;
+    out.push({
+      a, v: 380 + r() * 520, size: 7 + r() * 13, col: cols[i % cols.length],
+      ring: r() < 0.35, t0: 1.02 + r() * 0.12, life: 0.9 + r() * 0.6, spin: r() * 4 - 2,
+    });
+  }
+  return out;
+})();
+
+function drawParticles(g, t) {
+  for (const P of PARTS) {
+    const p = prog(t, P.t0, P.t0 + P.life);
+    if (p <= 0 || p >= 1) continue;
+    const d = P.v * (1 - (1 - p) ** 3) * 0.55;
+    const x = 543 + Math.cos(P.a) * (150 + d), y = 1045 + Math.sin(P.a) * (170 + d) + 40 * p * p;
+    const s = P.size * Math.sin(Math.PI * Math.min(1, p * 1.4)) ** 0.6 * (1 - p * 0.5);
+    g.save();
+    g.globalAlpha = 1 - p ** 3;
+    if (P.ring) {
+      g.lineWidth = s * 0.45;
+      g.strokeStyle = P.col;
+      g.beginPath();
+      g.arc(x, y, s, 0, TAU);
+      g.stroke();
+    } else {
+      blob(g, x, y, s, t * 3, P.spin * 5, 0.18, 24);
+      g.fillStyle = P.col;
+      g.fill();
+    }
+    g.restore();
+  }
+}
+
+// ------------------------------------------------------------ logo
+const LX0 = 326, LY0 = 798, LW = 436, LH = 494; // recorte de trabalho do PNG
+const LCX = 543, LCY = 1045;
+const logo = {};
+
+function splitLogo(img) {
+  const src = mk(LW, LH), sx = src.getContext('2d');
+  sx.drawImage(img, -LX0, -LY0);
+  const d = sx.getImageData(0, 0, LW, LH).data;
+  const names = ['cap', 'badge', 'bookL', 'bookR', 'stem', 'leaves'];
+  const bufs = {};
+  names.forEach(n => bufs[n] = new ImageData(LW, LH));
+  for (let yy = 0; yy < LH; yy++) {
+    for (let xx = 0; xx < LW; xx++) {
+      const i = (yy * LW + xx) * 4;
+      const a = d[i + 3];
+      if (!a) continue;
+      const r = d[i], gg = d[i + 1], b = d[i + 2];
+      const x = xx + LX0, y = yy + LY0;
+      const green = gg > r + 15 && gg >= b;
+      let n;
+      if (y >= 1182) n = 'cap';
+      else if (x >= 562 && y >= 905 && y <= 1035 && !green) n = 'badge';
+      else if (y >= 1010 && green && x >= 527 && x <= 559) n = 'stem';
+      else if (y >= 1028) n = x < 543 ? 'bookL' : 'bookR';
+      else n = 'leaves';
+      const o = bufs[n].data;
+      o[i] = r; o[i + 1] = gg; o[i + 2] = b; o[i + 3] = a;
+    }
+  }
+  names.forEach(n => {
+    const c = mk(LW, LH);
+    c.getContext('2d').putImageData(bufs[n], 0, 0);
+    logo[n] = c;
+  });
+  // adesivo branco: silhueta dilatada e arredondada
+  const pad = 40;
+  const sil = mk(LW + pad * 2, LH + pad * 2), sg = sil.getContext('2d');
+  const one = mk(LW, LH), og = one.getContext('2d');
+  og.drawImage(src, 0, 0);
+  og.globalCompositeOperation = 'source-in';
+  og.fillStyle = '#fff';
+  og.fillRect(0, 0, LW, LH);
+  for (const R of [8, 16, 22]) {
+    for (let k = 0; k < 32; k++) {
+      const th = k / 32 * TAU;
+      sg.drawImage(one, pad + R * Math.cos(th), pad + R * Math.sin(th));
+    }
+  }
+  const bl = mk(sil.width, sil.height), bgc = bl.getContext('2d');
+  bgc.filter = 'blur(7px)';
+  bgc.drawImage(sil, 0, 0);
+  const id = bgc.getImageData(0, 0, bl.width, bl.height), px = id.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const a = clamp((px[i + 3] - 70) / 70);
+    px[i] = px[i + 1] = px[i + 2] = 255;
+    px[i + 3] = 255 * a * a * (3 - 2 * a);
+  }
+  bgc.filter = 'none';
+  bgc.putImageData(id, 0, 0);
+  logo.sticker = bl;
+  logo.pad = pad;
+}
+
+const lg = mk(W, H), lgx = lg.getContext('2d');
+
+function layer(g, c, ax, ay, sx, sy, rot, alpha = 1) {
+  if (sx <= 0.001 || sy <= 0.001 || alpha <= 0.001) return;
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(ax, ay);
+  g.rotate(rot);
+  g.scale(sx, sy);
+  g.translate(-ax, -ay);
+  g.drawImage(c, LX0, LY0);
+  g.restore();
+}
+
+function drawLogo(g, t) {
+  const p0 = prog(t, 0.92, 1.75);
+  if (p0 <= 0) return;
+  const s = eOutElastic(p0);
+  const wob = Math.sin(p0 * Math.PI * 4) * (1 - p0) * 0.12;
+  const breathe = 1 + 0.012 * Math.sin((t - 1.7) * 2.4) * prog(t, 1.9, 2.6);
+  const rot = (1 - eOutCubic(p0)) * -0.35 + 0.012 * Math.sin(t * 1.8) * prog(t, 2, 3);
+
+  const L = lgx;
+  L.setTransform(1, 0, 0, 1, 0, 0);
+  L.clearRect(0, 0, W, H);
+  L.translate(LCX, LCY + 10 * Math.sin(t * 1.6) * prog(t, 1.9, 2.8));
+  L.rotate(rot);
+  L.scale(s * (1 + wob) * breathe, s * (1 - wob) * breathe);
+  L.translate(-LCX, -LCY);
+
+  // adesivo
+  L.drawImage(logo.sticker, LX0 - logo.pad, LY0 - logo.pad);
+
+  // livro: as páginas abrem a partir da lombada
+  const pl = eOutBack(prog(t, 1.0, 1.48), 2.2), pr = eOutBack(prog(t, 1.08, 1.56), 2.2);
+  const ly = eOutCubic(prog(t, 1.0, 1.38));
+  layer(L, logo.bookL, 543, 1170, pl, 0.4 + 0.6 * ly, -(1 - ly) * 0.25);
+  layer(L, logo.bookR, 543, 1170, pr, 0.4 + 0.6 * ly, (1 - ly) * 0.25);
+
+  // caule cresce de baixo para cima
+  const ps = eOutCubic(prog(t, 1.15, 1.47));
+  if (ps > 0) {
+    L.save();
+    L.beginPath();
+    L.rect(0, 1175 - 175 * ps, W, 200 * ps + 10);
+    L.clip();
+    L.drawImage(logo.stem, LX0, LY0);
+    L.restore();
+  }
+  // folhas brotam do topo do caule
+  const pf = prog(t, 1.32, 1.94);
+  const sf = eOutBack(pf, 2.4);
+  layer(L, logo.leaves, 545, 1010, sf, sf, (1 - eOutCubic(pf)) * 0.4 + 0.05 * Math.sin(t * 3) * prog(t, 1.9, 2.6) * (1 - prog(t, 3.5, 4.5)), Math.min(1, pf * 4));
+
+  // selo 30 anos
+  const pb = prog(t, 1.62, 2.14);
+  const sb = eOutBack(pb, 3);
+  layer(L, logo.badge, 642, 968, sb, sb, (1 - eOutCubic(pb)) * 0.9, Math.min(1, pb * 4));
+
+  // "Capítulo I" revela da esquerda para a direita
+  const pc = eOutExpo(prog(t, 1.72, 2.37));
+  if (pc > 0) {
+    L.save();
+    L.beginPath();
+    L.rect(370, 1170, 360 * pc, 120);
+    L.clip();
+    L.translate(0, 24 * (1 - pc));
+    L.drawImage(logo.cap, LX0, LY0);
+    L.restore();
+  }
+
+  // brilho atravessando o adesivo
+  const sh = prog(t, 3.25, 3.95);
+  if (sh > 0 && sh < 1) {
+    L.setTransform(1, 0, 0, 1, 0, 0);
+    L.save();
+    L.globalCompositeOperation = 'source-atop';
+    const x = lerp(150, 950, eInOutCubic(sh));
+    const gr = L.createLinearGradient(x - 120, 900, x + 120, 1150);
+    gr.addColorStop(0, 'rgba(255,255,255,0)');
+    gr.addColorStop(0.5, 'rgba(255,255,230,0.55)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    L.fillStyle = gr;
+    L.fillRect(0, 700, W, 700);
+    L.restore();
+  }
+
+  g.save();
+  g.shadowColor = 'rgba(25,70,55,0.35)';
+  g.shadowBlur = 26;
+  g.shadowOffsetY = 10;
+  g.drawImage(lg, 0, 0);
+  g.restore();
+}
+
+// ------------------------------------------------------------ textos
+const TITLE = 'depoimentos';
+const TITLE_FONT = '700 132px Fredoka';
+const ARC_R = 1000, ARC_CX = 540, ARC_Y = 752;
+let titleGlyphs = null;
+
+function layoutTitle(g) {
+  g.font = TITLE_FONT;
+  const ws = [...TITLE].map(ch => g.measureText(ch).width);
+  const track = -2;
+  const total = ws.reduce((a, b) => a + b, 0) + track * (ws.length - 1);
+  let s = -total / 2;
+  titleGlyphs = [...TITLE].map((ch, i) => {
+    const mid = s + ws[i] / 2;
+    s += ws[i] + track;
+    const th = mid / ARC_R;
+    return { ch, th, x: ARC_CX + ARC_R * Math.sin(th), y: ARC_Y + ARC_R * (1 - Math.cos(th)) };
+  });
+}
+
+function drawTitle(g, t) {
+  g.save();
+  g.font = TITLE_FONT;
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
+  g.lineJoin = 'round';
+  const wave = prog(t, 3.0, 3.6);
+  titleGlyphs.forEach((G, i) => {
+    const t0 = 2.05 + i * 0.05;
+    const p = prog(t, t0, t0 + 0.55);
+    if (p <= 0) return;
+    const s = eOutBack(p, 2.6);
+    const dy = -70 * (1 - eOutCubic(p)) + wave * 6 * Math.sin(t * 5 - i * 0.6);
+    const r = G.th + (1 - eOutCubic(p)) * (i % 2 ? 0.5 : -0.5);
+    g.save();
+    g.translate(G.x, G.y + dy);
+    g.rotate(r);
+    g.scale(s, s);
+    g.globalAlpha = Math.min(1, p * 3);
+    g.translate(0, -40);
+    // sombra/contorno verde
+    g.strokeStyle = C.outline;
+    g.fillStyle = C.outline;
+    g.lineWidth = 22;
+    g.strokeText(G.ch, 0, 40 + 9);
+    g.fillText(G.ch, 0, 40 + 9);
+    g.strokeText(G.ch, 0, 40);
+    g.fillStyle = '#ffffff';
+    g.fillText(G.ch, 0, 40);
+    g.restore();
+  });
+  g.restore();
+}
+
+const SUB = '30 anos';
+const SUB_FONT = '800 112px "Open Sans"';
+let subGlyphs = null;
+
+function layoutSub(g) {
+  g.font = SUB_FONT;
+  const ws = [...SUB].map(ch => g.measureText(ch).width);
+  const total = ws.reduce((a, b) => a + b, 0);
+  let s = 540 - total / 2;
+  subGlyphs = [...SUB].map((ch, i) => {
+    const x = s + ws[i] / 2;
+    s += ws[i];
+    return { ch, x };
+  });
+}
+
+function drawSub(g, t) {
+  const Y = 1472;
+  g.save();
+  g.font = SUB_FONT;
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
+  subGlyphs.forEach((G, i) => {
+    if (G.ch === ' ') return;
+    const t0 = 2.5 + i * 0.06;
+    const p = prog(t, t0, t0 + 0.5);
+    if (p <= 0) return;
+    const s = eOutBack(p, 2.8);
+    const pop = 1 + 0.08 * Math.sin(Math.PI * prog(t, 3.9 + i * 0.04, 4.25 + i * 0.04));
+    g.save();
+    g.translate(G.x, Y - 40 + 80 * (1 - eOutCubic(p)));
+    g.scale(s * pop, s * pop);
+    g.globalAlpha = Math.min(1, p * 3);
+    g.strokeStyle = C.outline;
+    g.lineWidth = 20;
+    g.strokeText(G.ch, 0, 40 + 5);
+    g.strokeText(G.ch, 0, 40);
+    g.fillStyle = C.yellow;
+    g.fillText(G.ch, 0, 40);
+    g.restore();
+  });
+  g.restore();
+}
+
+// ------------------------------------------------------------ cena
+function render(t) {
+  t = clamp(t, 0, DUR);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  bgx.setTransform(1, 0, 0, 1, 0, 0);
+  drawBackground(bgx, t);
+
+  // câmera: leve dolly-in que assenta
+  const Z = 1.07 - 0.07 * eOutCubic(prog(t, 0, 4.6));
+  ctx.translate(540, 960);
+  ctx.scale(Z, Z);
+  ctx.translate(-540, -960);
+
+  // revelação líquida: laranja, amarelo e depois o fundo
+  const pr = eInOutCubic(prog(t, 0.0, 0.85));
+  if (pr < 1) {
+    ctx.fillStyle = C.dark;
+    ctx.fillRect(-100, -100, W + 200, H + 200);
+    const R = 1500 * pr;
+    const [cx, cy] = REVEAL_C;
+    blob(ctx, cx, cy, R + 150 * Math.sin(Math.PI * pr), t, 1.0, 0.1);
+    ctx.fillStyle = C.orange;
+    ctx.fill();
+    blob(ctx, cx, cy, R + 75 * Math.sin(Math.PI * pr), t, 2.4, 0.1);
+    ctx.fillStyle = C.yellow;
+    ctx.fill();
+    ctx.save();
+    blob(ctx, cx, cy, R, t, 3.7, 0.1);
+    ctx.clip();
+    ctx.drawImage(bg, 0, 0);
+    ctx.restore();
+  } else {
+    ctx.drawImage(bg, 0, 0);
+  }
+
+  drawRing(ctx, t);
+  LEAVES.forEach(L => drawLeaf(ctx, L, t));
+  drawParticles(ctx, t);
+  drawLogo(ctx, t);
+  drawTitle(ctx, t);
+  drawSub(ctx, t);
+}
+
+// ------------------------------------------------------------ boot
+window.ready = (async () => {
+  await document.fonts.load(TITLE_FONT);
+  await document.fonts.load(SUB_FONT);
+  const img = new Image();
+  img.src = 'assets/logo_capitulo1.png';
+  await img.decode();
+  splitLogo(img);
+  layoutTitle(ctx);
+  layoutSub(ctx);
+  return true;
+})();
+
+if (!navigator.webdriver) {
+  window.ready.then(() => {
+    const start = performance.now();
+    const loop = now => {
+      render(((now - start) / 1000) % (DUR + 1));
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+}
+</script>
+</body>
+</html>
