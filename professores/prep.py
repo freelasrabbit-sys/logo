@@ -38,7 +38,7 @@ def morph(m, size, op):
 # cada área com elemento recebe um pedaço de quadro limpo da mesma coluna
 FILL = [  # (x0, y0, x1, y1, y_fonte)
     (0, 525, 445, 805, 240),
-    (400, 500, 645, 775, 190),
+    (395, 495, 655, 805, 175),
     (80, 775, 1015, 1180, 1420),
     (840, 1040, 1080, 1335, 1560),
 ]
@@ -120,11 +120,11 @@ a = a * blur(core, 1.5)
 save("aviao", np.full_like(img, 245), a, 0, 560, 415, 775)
 
 # ---------------------------------------------------------------- maçã
-m = ((sat > 45) | (lum > Bl + 70)).astype(np.float32) * region(435, 540, 605, 740)
+m = ((sat > 45) | (lum > Bl + 70)).astype(np.float32) * region(425, 525, 625, 780)
 m = morph(morph(m, 9, "dilate"), 9, "erode")  # fecha os buracos
 m = morph(morph(m, 5, "erode"), 5, "dilate")  # remove grãos soltos
 a = blur(m, 1.2)
-save("maca", img, a, 435, 540, 605, 740)
+save("maca", img, a, 425, 525, 625, 780)
 
 # ---------------------------------------------------------------- nuvem (giz azul)
 blue = np.array([118, 182, 246], np.float32)
