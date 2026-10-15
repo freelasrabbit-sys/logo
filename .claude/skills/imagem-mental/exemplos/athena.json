@@ -1,0 +1,17 @@
+{
+  "escola": "Colégio Athena",
+  "logo": "../../../../assets/logo_completo.jpg",
+  "layout": "arco",
+  "formato": "quadrado",
+  "fundo": "#ffffff",
+  "itens": [
+    {"texto": "Desenvolvimento de Competências e Habilidades", "icone": "certificate"},
+    {"texto": "Projeto Social", "icone": "heart-handshake"},
+    {"texto": "Ensino Bilíngue", "icone": "world"},
+    {"texto": "Educação Integral", "icone": "books"},
+    {"texto": "Parceria Familiar", "icone": "home-heart"},
+    {"texto": "Ambiente Seguro e Acolhedor", "icone": "heart-plus"},
+    {"texto": "Excelência Acadêmica", "icone": "award"}
+  ],
+  "slogan": "Ensino Bilíngue de excelência"
+}
