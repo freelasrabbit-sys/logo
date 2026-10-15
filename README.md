@@ -10,3 +10,19 @@ python3 music.py build/trilha.wav
 python3 render.py build/video_sem_audio.mp4
 ffmpeg -i build/video_sem_audio.mp4 -i build/trilha.wav -c:v copy -c:a aac -b:a 256k -shortest video/colegio_athena_logo_motion.mp4
 ```
+
+# Instituto Educacional Hermínio Silva — Selos dos pilares
+
+`pilares/` — selos circulares dos 5 pilares (Alfabetização e Letramento, Criatividade e Inovação,
+Desenvolvimento Socioemocional, Responsabilidade Social, Inglês todos os dias) em 3 opções de estilo.
+
+- `pilares/svg/` — vetores (fonte Nunito embutida)
+- `pilares/png/` — PNG 1200 px com fundo transparente + pranchas de comparação `prancha_opcao-*.png`
+- `pilares/index.html` — galeria
+
+Para regenerar:
+
+```bash
+python3 pilares/gerar.py
+NODE_PATH=$(npm root -g) node pilares/render.mjs
+```
