@@ -43,6 +43,7 @@ class Ctx:
     sombra: bool = True
     estilo_icone: str = "linha"  # linha | solido | negrito
     limites: list = field(default_factory=list)
+    logo_inline: tuple | None = None  # (conteúdo, x, y, largura, altura do viewBox) de logo SVG
     teto_rotulo: float | None = None  # tamanho único para todos os tópicos (2ª passada)
     tamanhos_rotulo: list = field(default_factory=list)
 
@@ -106,6 +107,11 @@ class Ctx:
     def logo(self, cx, cy, max_w, max_h):
         esc = min(max_w / self.logo_w, max_h / self.logo_h)
         w, h = self.logo_w * esc, self.logo_h * esc
+        if self.logo_inline:  # logo vetorial: entra como curvas, editável no CorelDRAW
+            interno, vx, vy, vw, vh = self.logo_inline
+            e = w / vw
+            return (f'<g id="logo-escola" transform="translate({cx - w / 2 - vx * e:.2f} '
+                    f'{cy - h / 2 - vy * e:.2f}) scale({e:.5f})">{interno}</g>'), w, h
         return (f'<image id="logo-escola" x="{cx - w / 2:.2f}" y="{cy - h / 2:.2f}" '
                 f'width="{w:.2f}" height="{h:.2f}" preserveAspectRatio="xMidYMid meet" '
                 f'href="{self.logo_uri}" xlink:href="{self.logo_uri}"/>'), w, h

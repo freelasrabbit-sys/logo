@@ -113,6 +113,15 @@ Corrija e gere de novo. Para quebrar uma linha num ponto específico, use `\n` n
 Depois mostre as 3 opções à usuária, com uma linha de justificativa para cada.
 
 ### 5. Refine e entregue
+Antes dos arquivos finais, **vetorize o logo** se ele veio em PNG/JPG de cores chapadas.
+Assim ele entra no CorelDRAW como curvas editáveis, e não como foto:
+```bash
+python3 scripts/vetorizar_logo.py trabalho/logo.jpg --cores "#012650,#830006" -o trabalho/logo_vetor.svg
+```
+Confira o resultado (renderize e abra) e aponte `"logo": "logo_vetor.svg"` no JSON. Logos
+com degradê, foto ou detalhes muito finos não vetorizam bem: nesse caso, mantenha o raster
+e peça à escola o logo em vetor (.cdr, .ai, .pdf ou .svg).
+
 Ajuste a opção escolhida conforme os pedidos dela. Depois da aprovação:
 ```bash
 python3 scripts/gerar.py trabalho/config.json --layout <escolhido> --formatos png,pdf,svg
@@ -163,6 +172,6 @@ espaço em branco generoso, ícones simples, tipografia sem serifa e cores da ma
 
 ## Dependências
 
-Python 3 com `cairosvg`, `fonttools` e `Pillow`
-(`pip install cairosvg fonttools pillow`). As fontes (Poppins e Fredoka, licença OFL) e
+Python 3 com `cairosvg`, `fonttools`, `Pillow`, `numpy` e `potracer`
+(`pip install cairosvg fonttools pillow numpy potracer`). As fontes (Poppins e Fredoka, licença OFL) e
 os ícones (Tabler Icons de linha e preenchidos, licença MIT) já vêm em `assets/`.

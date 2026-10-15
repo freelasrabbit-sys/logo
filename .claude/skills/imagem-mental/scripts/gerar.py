@@ -73,16 +73,32 @@ def carregar_config(caminho):
     return cfg, base
 
 
+def logo_svg_inline(caminho):
+    """Conteúdo de um logo SVG para embutir como curvas (sem <image>)."""
+    with open(caminho, encoding="utf-8") as f:
+        txt = f.read()
+    m = re.search(r"<svg\b[^>]*>", txt)
+    vb = re.search(r'viewBox="([^"]+)"', m.group(0)) if m else None
+    if not m or not vb:
+        return None
+    x, y, w, h = (float(v) for v in vb.group(1).replace(",", " ").split())
+    interno = txt[m.end():txt.rfind("</svg>")]
+    return interno, x, y, w, h
+
+
 def montar_svg(cfg, layout, curvas, formato, fundo):
     func, modo_padrao, _ = LAYOUTS[layout]
     paleta = cfg.get("cores") or C.paleta_do_logo(cfg["logo"])
     modo = cfg.get("modo_cor") or modo_padrao
     cores_itens = cfg.get("cores_itens") or C.expandir(paleta, len(cfg["itens"]), modo)
     uri, lw, lh = C.logo_data_uri(cfg["logo"])
+    inline = logo_svg_inline(cfg["logo"]) if cfg["logo"].lower().endswith(".svg") else None
+    if inline:
+        lw, lh = inline[3], inline[4]
     ctx = Ctx(itens=cfg["itens"], cores_itens=cores_itens, paleta=paleta, logo_uri=uri,
               logo_w=lw, logo_h=lh, fundo=fundo, familia=cfg.get("fonte", "Poppins"),
               curvas=curvas, slogan=cfg.get("slogan", ""), sombra=cfg.get("sombra", True),
-              estilo_icone=cfg.get("estilo_icone", "linha"))
+              estilo_icone=cfg.get("estilo_icone", "linha"), logo_inline=inline)
     D = func(ctx)
     # todos os tópicos com o mesmo tamanho de letra: refaz usando o menor tamanho que coube
     if ctx.tamanhos_rotulo and min(ctx.tamanhos_rotulo) < max(ctx.tamanhos_rotulo) * 0.97:

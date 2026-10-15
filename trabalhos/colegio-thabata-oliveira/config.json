@@ -1,15 +1,35 @@
 {
   "escola": "Colégio Thabata Oliveira",
-  "logo": "logo.jpg",
+  "logo": "logo_vetor.svg",
   "estilo": "classico",
-  "cores": ["#012650", "#830006"],
+  "cores": [
+    "#012650",
+    "#830006"
+  ],
   "fundo": "#ffffff",
   "formato": "quadrado",
   "itens": [
-    {"texto": "Proposta Pedagógica Diferenciada", "icone": "bulb"},
-    {"texto": "Estrutura Física Completa", "icone": "building-community"},
-    {"texto": "Escola Humanizada e Próxima às Famílias", "icone": "heart-handshake"},
-    {"texto": "Desenvolvimento Socioemocional", "icone": "mood-smile"},
-    {"texto": "Equipe Pedagógica de Alta Performance", "icone": "trophy"}
-  ]
+    {
+      "texto": "Proposta Pedagógica Diferenciada",
+      "icone": "bulb"
+    },
+    {
+      "texto": "Estrutura Física Completa",
+      "icone": "building-community"
+    },
+    {
+      "texto": "Escola Humanizada e Próxima às Famílias",
+      "icone": "heart-handshake"
+    },
+    {
+      "texto": "Desenvolvimento Socioemocional",
+      "icone": "mood-smile"
+    },
+    {
+      "texto": "Equipe Pedagógica de Alta Performance",
+      "icone": "trophy"
+    }
+  ],
+  "layout": "arco",
+  "nome_arquivo": "CTO-imagem-mental-arco"
 }
