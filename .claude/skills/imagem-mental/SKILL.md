@@ -20,9 +20,9 @@ combina com cada logo e com cada quantidade de tópicos.
   Normalmente são de 4 a 8.
 - **Entrega**: gerar direto **3 opções bem diferentes** entre si, cada uma com **uma
   linha** explicando por que combina. Depois, refinar a escolhida.
-- **Liberdade**: pode criar formatos novos (hexágonos, escada, quebra-cabeça, colunas,
-  raios...), desde que nada fique muito diferente ou inusitado. Formatos ousados só
-  quando ela pedir.
+- **Liberdade**: é esperado que crie formatos novos (hexágonos, escada, quebra-cabeça,
+  colunas, raios...), sem nada muito diferente ou inusitado. Formatos ousados só
+  quando ela pedir. Ela não quer ver sempre os mesmos modelos de exemplo.
 - **Combinar com o logo**: usar as **cores** do logo e o **estilo** dele. Logo infantil
   e arredondado pede formas suaves, fonte arredondada e ícones preenchidos. Logo clássico
   e sóbrio pede linhas mais retas, Poppins e ícones de linha.
@@ -45,25 +45,51 @@ Abra o logo (Read) e anote:
 - **Tópicos**: a quantidade, se têm descrição, e se algum é longo demais. Se for,
   sugira uma versão mais curta e não invente conteúdo.
 
-### 2. Escolha 3 formatos diferentes
-Use os critérios abaixo. As três opções devem ser realmente distintas: por exemplo, uma
-circular de uma cor, uma colorida e uma com outra estrutura.
+### 2. Crie 3 formatos diferentes (com criatividade)
+**Regra principal: pelo menos 2 das 3 opções devem ser formatos novos**, pensados para
+aquela escola, e não tirados do catálogo dos modelos. O catálogo serve de base de
+qualidade e pode entrar como **no máximo 1** das 3 opções. Repetir os modelos de
+exemplo foi apontado pela usuária como falta de criatividade.
 
-| layout | modelo | combina com | tópicos | descrição |
+Como chegar a um formato novo:
+1. **Parta do conceito da escola**. Qual metáfora visual combina com o logo e com os
+   tópicos? Exemplos:
+   - pilares que sustentam a escola (escola clássica);
+   - degraus ou crescimento (desempenho, aprovações);
+   - árvore ou raízes (valores, tradição);
+   - quebra-cabeça (formação integral);
+   - engrenagens (método);
+   - livro aberto (projeto pedagógico);
+   - casa (acolhimento);
+   - caminho ou trilha (jornada do aluno);
+   - colmeia de hexágonos (comunidade);
+   - constelação (protagonismo);
+   - mapa ramificado (mapa mental clássico).
+2. **Parta da forma do logo**: as letras, o símbolo ou o mascote podem virar a
+   estrutura. Por exemplo, um logo com "C" grande pede um anel em C.
+3. **Ajuste à quantidade de tópicos**: 3 pedem tríade ou trevo; 4, quadrantes ou cruz;
+   5, estrela ou templo; 6, hexágono ou colmeia; 7 e 8, anel ou duas colunas.
+4. **Fique dentro do bom senso**: o formato precisa ser claro e legível, sem nada
+   inusitado demais (formatos ousados só a pedido). O logo continua sendo o destaque.
+
+Os formatos novos ganham uma função em `scripts/layouts.py` (veja "Como criar um
+layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para reaproveitar.
+
+**Catálogo** (modelos de referência e formatos já criados):
+
+| layout | origem | combina com | tópicos | descrição |
 |---|---|---|---|---|
-| `arco` | Athena | clássico, logo quadrado/redondo, 1 cor | 5–8 | ótima (texto fora) |
-| `anel` | Koala | clássico ou infantil, logo redondo | 4–8 | só curtas |
-| `leque` | Criança Feliz | infantil, logo horizontal | 4–6 | só curtas |
-| `petalas` | Estela Maris | infantil/colorido, logo compacto | 5–8 | boa (texto fora) |
-| `arvore` | Infan Gardeno | infantil, ideia de crescimento, com slogan | 4–8 | só curtas |
-| `baloes` | Pistori | qualquer estilo, post com slogan | 5–8 | razoável |
-| `orbita` | Koala 2 | clássico, logo horizontal, número par | 4–8 | só curtas |
-| `onda` | Sagaz | logo bem horizontal, poucos tópicos | 3–6 | boa (texto fora) |
-
-**Quando nenhum desses servir bem** (por quantidade de tópicos, proporção do logo,
-excesso de texto, ou porque um formato novo ficaria claramente melhor), **crie um
-layout novo** seguindo "Como criar um layout novo" abaixo. Os layouts novos não são
-criados antecipadamente: eles nascem conforme cada imagem pede.
+| `arco` | modelo Athena | clássico, logo quadrado/redondo, 1 cor | 5–8 | ótima (texto fora) |
+| `anel` | modelo Koala | clássico ou infantil, logo redondo | 4–8 | só curtas |
+| `leque` | modelo Criança Feliz | infantil, logo horizontal | 4–6 | só curtas |
+| `petalas` | modelo Estela Maris | infantil/colorido, logo compacto | 5–8 | boa (texto fora) |
+| `arvore` | modelo Infan Gardeno | infantil, crescimento, com slogan | 4–8 | só curtas |
+| `baloes` | modelo Pistori | qualquer, post com slogan | 5–8 | razoável |
+| `orbita` | modelo Koala 2 | clássico, logo horizontal | 4–8 | só curtas |
+| `onda` | modelo Sagaz | logo bem horizontal, poucos tópicos | 3–6 | boa (texto fora) |
+| `pilares` | criado para o CTO | clássico/tradicional, "pilares da escola" | 3–6 | só curtas |
+| `degraus` | criado para o CTO | desempenho, crescimento, logo horizontal | 3–6 | razoável |
+| `mapa` | criado para o CTO | mapa mental clássico, qualquer estilo | 4–8 | boa |
 
 ### 3. Monte o JSON
 Crie uma pasta de trabalho e use `exemplos/athena.json` como base. O logo é um caminho

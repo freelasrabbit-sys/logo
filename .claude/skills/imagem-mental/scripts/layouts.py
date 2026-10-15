@@ -76,13 +76,16 @@ class Ctx:
         item = self.itens[i]
         desc = (item.get("descricao") or "").strip()
         comum = dict(alinhamento=alinhamento, max_larg=max_larg)
+        ref = tamanho  # tamanho pedido pelo layout, base para decidir quando hifenizar
         if self.teto_rotulo:
             tamanho = min(tamanho, self.teto_rotulo)
         titulo_cmp = item["texto"].upper() if caixa_alta else item["texto"]
         self.tamanhos_rotulo.append(texto.ajustar(titulo_cmp, self.familia, peso, tamanho, max_larg,
-                                                  min(max_linhas, 2) if desc else max_linhas)[1])
+                                                  min(max_linhas, 2) if desc else max_linhas,
+                                                  referencia=ref)[1])
         if not desc:
             return self.texto(item["texto"], x, y, tamanho=tamanho, peso=peso, cor=cor, max_linhas=max_linhas,
+                              referencia=ref,
                               vertical=vertical, caixa_alta=caixa_alta, id_=f"texto-{i + 1}", **comum)
         titulo = item["texto"].upper() if caixa_alta else item["texto"]
         lt, tt = texto.ajustar(titulo, self.familia, peso, tamanho * 0.95, max_larg, min(max_linhas, 2))
@@ -503,6 +506,154 @@ def onda(ctx: Ctx) -> Desenho:
     return D
 
 
+# ======================================================= layouts criados sob demanda
+
+# ------------------------------------------------- 9. PILARES (criado para o CTO)
+
+def pilares(ctx: Ctx) -> Desenho:
+    """Templo clássico: logo no alto, frontão, e cada tópico é uma coluna que sustenta a escola."""
+    D = Desenho()
+    n = ctx.n
+    x0, x1 = 25, 975
+    larg = x1 - x0
+    escuro = ctx.principal
+    acento = ctx.cor(1) if len(ctx.paleta) > 1 else C.escurecer(escuro, 0.3)
+    medio = C.clarear(escuro, 0.12)
+    # logo no topo
+    img, _, lh = ctx.logo(500, 150, 600, 230)
+    D.add("Logo", img)
+    topo = 150 + lh / 2 + 40
+    # frontão
+    f_alt = 125
+    D.add("Formas", f'<path id="frontao" d="M{x0 - 20} {topo + f_alt} L500 {topo} L{x1 + 20} {topo + f_alt}Z" '
+                    f'fill="{escuro}"/>')
+    D.add("Formas", f'<path d="M{x0 + 40} {topo + f_alt - 14} L500 {topo + 22} L{x1 - 40} {topo + f_alt - 14}Z" '
+                    f'fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="3" stroke-linejoin="round"/>')
+    viga = topo + f_alt + 8
+    D.add("Formas", f'<rect id="viga" x="{x0 - 20}" y="{viga}" width="{larg + 40}" height="30" fill="{acento}"/>')
+    # colunas
+    vao = larg / n
+    fuste_w = vao * 0.9
+    cap_y = viga + 30 + 10
+    fuste_y = cap_y + 26
+    base_y = fuste_y + 340
+    for i in range(n):
+        cx = x0 + vao * (i + 0.5)
+        D.add("Formas", f'<g id="coluna-{i + 1}">'
+                        f'<rect x="{cx - fuste_w / 2 - 12:.2f}" y="{cap_y:.2f}" width="{fuste_w + 24:.2f}" height="20" rx="4" fill="{medio}"/>'
+                        f'<rect x="{cx - fuste_w / 2:.2f}" y="{fuste_y:.2f}" width="{fuste_w:.2f}" height="{base_y - fuste_y:.2f}" fill="{escuro}"/>'
+                        f'<rect x="{cx - fuste_w / 2 - 12:.2f}" y="{base_y + 6:.2f}" width="{fuste_w + 24:.2f}" height="20" rx="4" fill="{medio}"/>'
+                        f'</g>')
+        # caneluras discretas
+        for k in (-0.28, 0.28):
+            D.add("Decoração", f'<line x1="{cx + k * fuste_w:.2f}" y1="{fuste_y + 150:.2f}" x2="{cx + k * fuste_w:.2f}" '
+                               f'y2="{base_y - 18:.2f}" stroke="#ffffff" stroke-opacity="0.12" stroke-width="3"/>')
+        iy = fuste_y + 62
+        D.add("Formas", f'<circle id="selo-{i + 1}" cx="{cx:.2f}" cy="{iy:.2f}" r="38" fill="#ffffff"/>')
+        D.add("Ícones", ctx.icone(i, cx, iy, 44, escuro, 1.8))
+        svg, _ = ctx.rotulo(i, cx, fuste_y + 120 + (base_y - fuste_y - 120) / 2 - 10, tamanho=22, peso=600,
+                            cor="#ffffff", max_larg=fuste_w - 14, max_linhas=5)
+        D.add("Textos", svg)
+    # degraus da base
+    d1 = base_y + 32
+    D.add("Formas", f'<rect id="degrau-1" x="{x0 - 20}" y="{d1}" width="{larg + 40}" height="24" fill="{acento}"/>')
+    D.add("Formas", f'<rect id="degrau-2" x="{x0 - 45}" y="{d1 + 30}" width="{larg + 90}" height="24" fill="{escuro}"/>')
+    D.caixa = (x0 - 50, 150 - lh / 2 - 10, x1 + 50, d1 + 60)
+    return D
+
+
+# ------------------------------------------------- 10. DEGRAUS (criado para o CTO)
+
+def degraus(ctx: Ctx) -> Desenho:
+    """Escada ascendente: cada tópico é um degrau, seta de crescimento e logo no espaço livre acima."""
+    D = Desenho()
+    n = ctx.n
+    x0, x1, chao = 30, 970, 900
+    gap = 12
+    w = (x1 - x0 - gap * (n - 1)) / n
+    h_min, passo = 275, min(95, 360 / max(n - 1, 1))
+    acento = ctx.cor(1) if len(ctx.paleta) > 1 else C.escurecer(ctx.principal, 0.3)
+    topos = []
+    for i in range(n):
+        x = x0 + i * (w + gap)
+        h = h_min + i * passo
+        y = chao - h
+        topos.append((x + w / 2, y))
+        cor = C.misturar(C.clarear(ctx.principal, 0.35), ctx.principal, i / max(n - 1, 1))
+        D.add("Formas", f'<path id="degrau-{i + 1}" d="M{x:.2f} {chao} V{y + 14:.2f} Q{x:.2f} {y:.2f} {x + 14:.2f} {y:.2f} '
+                        f'H{x + w - 14:.2f} Q{x + w:.2f} {y:.2f} {x + w:.2f} {y + 14:.2f} V{chao}Z" fill="{cor}"/>')
+        D.add("Formas", f'<circle id="selo-{i + 1}" cx="{x + w / 2:.2f}" cy="{y + 62:.2f}" r="38" fill="#ffffff"/>')
+        D.add("Ícones", ctx.icone(i, x + w / 2, y + 62, 44, ctx.principal, 1.8))
+        svg, _ = ctx.rotulo(i, x + w / 2, y + 122, tamanho=22, peso=600, cor="#ffffff",
+                            max_larg=w - 14, max_linhas=5, vertical="top")
+        D.add("Textos", svg)
+        D.add("Textos", ctx.texto(f"{i + 1:02d}", x + w / 2, chao - 26, tamanho=30, peso=700,
+                                  cor="#ffffff", max_larg=w, max_linhas=1, vertical="bottom",
+                                  id_=f"numero-{i + 1}")[0].replace('fill="#ffffff"', 'fill="#ffffff" fill-opacity="0.35"'))
+    # seta de crescimento sobre os degraus
+    pts = [(x, y - 42) for x, y in topos]
+    d = "M" + " L".join(f"{x:.2f} {y:.2f}" for x, y in pts)
+    D.add("Decoração", f'<path id="seta" d="{d}" fill="none" stroke="{acento}" stroke-width="5" '
+                       f'stroke-dasharray="2 12" stroke-linecap="round"/>')
+    (ax, ay), (bx, by) = pts[-2], pts[-1]
+    ang = math.degrees(math.atan2(by - ay, bx - ax))
+    D.add("Decoração", f'<path d="M0 -13 L24 0 L0 13Z" fill="{acento}" '
+                       f'transform="translate({bx:.2f} {by:.2f}) rotate({ang:.2f})"/>')
+    # logo no triângulo livre acima dos primeiros degraus
+    lim_y = topos[min(2, n - 1)][1] - 80
+    img, lw, lh = ctx.logo(x0 + 230, 0, 460, 280)
+    cy_logo = min(lim_y - lh / 2, topos[0][1] - 150 - lh / 2)
+    D.add("Logo", ctx.logo(x0 + lw / 2, cy_logo, 460, 280)[0])
+    D.caixa = (x0 - 10, min(cy_logo - lh / 2, topos[-1][1] - 70) - 10, x1 + 30, chao + 10)
+    return D
+
+
+# --------------------------------------------- 11. MAPA RAMIFICADO (criado para o CTO)
+
+def mapa(ctx: Ctx) -> Desenho:
+    """Mapa mental clássico: logo no centro e galhos curvos até cartões dos dois lados."""
+    D = Desenho()
+    cx, cy, R = 500, 500, 190
+    n = ctx.n
+    esq = math.ceil(n / 2)
+    lados = [(-1, list(range(esq))), (1, list(range(esq, n)))]
+    cw, ch = 300, 150
+    D.add("Decoração", f'<circle cx="{cx}" cy="{cy}" r="{R + 18}" fill="none" stroke="{C.clarear(ctx.principal, 0.8)}" '
+                       f'stroke-width="10"/>')
+    for sinal, idx in lados:
+        k = len(idx)
+        esp = min(235, 720 / max(k, 1))
+        for j, i in enumerate(idx):
+            y = cy + (j - (k - 1) / 2) * esp
+            cor = ctx.cores_itens[i]
+            borda_int = cx + sinal * 265  # lado do cartão voltado para o centro
+            x_card = borda_int if sinal > 0 else borda_int - cw
+            # galho
+            sx, sy = cx + sinal * (R + 18) * 0.92, cy + (y - cy) * 0.35
+            D.add("Decoração", f'<path id="galho-{i + 1}" d="M{sx:.2f} {sy:.2f} C{cx + sinal * 225:.2f} {sy:.2f} '
+                               f'{borda_int - sinal * 60:.2f} {y:.2f} {borda_int:.2f} {y:.2f}" fill="none" '
+                               f'stroke="{cor}" stroke-width="5" stroke-linecap="round"/>')
+            D.add("Decoração", f'<circle cx="{sx:.2f}" cy="{sy:.2f}" r="8" fill="{cor}"/>')
+            D.add("Formas", sombra(f"M{x_card + 20} {y - ch / 2} h{cw - 40} a20 20 0 0 1 20 20 v{ch - 40} "
+                                   f"a20 20 0 0 1 -20 20 h{-(cw - 40)} a20 20 0 0 1 -20 -20 v{-(ch - 40)} "
+                                   f"a20 20 0 0 1 20 -20Z", ctx, 6, 0.08))
+            D.add("Formas", f'<rect id="cartao-{i + 1}" x="{x_card:.2f}" y="{y - ch / 2:.2f}" width="{cw}" height="{ch}" '
+                            f'rx="20" fill="{cor}"/>')
+            # selo do ícone na ponta do galho
+            D.add("Formas", f'<circle id="selo-{i + 1}" cx="{borda_int:.2f}" cy="{y:.2f}" r="40" fill="#ffffff" '
+                            f'stroke="{cor}" stroke-width="5"/>')
+            D.add("Ícones", ctx.icone(i, borda_int, y, 42, cor, 1.8))
+            tx = x_card + (62 if sinal > 0 else 22)
+            svg, _ = ctx.rotulo(i, tx + (cw - 84) / 2, y, tamanho=26, peso=600, cor=C.texto_sobre(cor),
+                                max_larg=cw - 92, max_linhas=3)
+            D.add("Textos", svg)
+    D.add("Formas", sombra(circulo_d(cx, cy, R), ctx, 8, 0.10))
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{R}" fill="#ffffff"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, R - 14)[0])
+    D.caixa = (cx - 265 - cw - 10, 120, cx + 265 + cw + 10, 880)
+    return D
+
+
 LAYOUTS = {
     "arco": (arco, "marca", "Anel em 'C' com ícones no anel e textos por fora (modelo Athena)"),
     "anel": (anel, "marca", "Anel completo em fatias com selo e texto dentro (modelo Koala)"),
@@ -512,4 +663,8 @@ LAYOUTS = {
     "baloes": (baloes, "alternada", "Balões de fala em volta de um círculo com logo e slogan (modelo Pistori)"),
     "orbita": (orbita, "marca", "Logo entre arcos, itens em círculos dos dois lados (modelo Koala 2)"),
     "onda": (onda, "marca", "Faixa em ondas com ícones nas curvas e logo em pílula abaixo (modelo Sagaz)"),
+    # criados sob demanda
+    "pilares": (pilares, "marca", "Templo: logo no alto e cada tópico é uma coluna (criado para o CTO)"),
+    "degraus": (degraus, "marca", "Escada ascendente com seta de crescimento e logo acima (criado para o CTO)"),
+    "mapa": (mapa, "alternada", "Mapa mental: logo no centro, galhos curvos até cartões (criado para o CTO)"),
 }

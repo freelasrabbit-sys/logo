@@ -43,32 +43,93 @@ def largura(txt: str, familia: str, peso: int, tamanho: float) -> float:
     return total * tamanho / upm
 
 
-def quebrar(txt: str, familia: str, peso: int, tamanho: float, max_larg: float) -> list[str]:
-    """Quebra por palavras. Respeita quebras manuais com '\\n'."""
+VOGAIS = set("aeiouáéíóúâêôãõàüAEIOUÁÉÍÓÚÂÊÔÃÕÀÜ")
+GRUPOS = {"bl", "br", "cl", "cr", "dr", "fl", "fr", "gl", "gr", "pl", "pr", "tr", "vr",
+          "ch", "lh", "nh", "qu", "gu"}
+
+
+def silabas_corte(palavra: str) -> list[int]:
+    """Posições onde a palavra pode ser hifenizada (regras simples do português)."""
+    p = palavra.lower()
+    cortes = []
+    i = 1
+    while i < len(p) - 2:
+        a, b, c = p[i - 1], p[i], p[i + 1]
+        if a in VOGAIS and b not in VOGAIS and c in VOGAIS:  # v-cv
+            cortes.append(i)
+        elif a in VOGAIS and b not in VOGAIS and c not in VOGAIS and i + 2 < len(p):
+            par = b + c
+            if par in GRUPOS:  # v-ccv (pr, bl, ch, lh, nh...)
+                cortes.append(i)
+            else:  # vc-cv (rr, ss, sc, rn...)
+                cortes.append(i + 1)
+        i += 1
+    # evita cortar logo após duas vogais (hiato/ditongo: "socioe-mocional")
+    return [k for k in cortes if 2 <= k <= len(p) - 3 and not (p[k - 1] in VOGAIS and p[k - 2] in VOGAIS)]
+
+
+def _hifenizar(palavra, familia, peso, tamanho, max_larg, ocupado):
+    """Maior pedaço da palavra (com hífen) que cabe no espaço restante da linha."""
+    melhor = None
+    for k in silabas_corte(palavra):
+        pedaco = palavra[:k] + "-"
+        if largura((ocupado + " " if ocupado else "") + pedaco, familia, peso, tamanho) <= max_larg:
+            melhor = k
+    return melhor
+
+
+def quebrar(txt: str, familia: str, peso: int, tamanho: float, max_larg: float,
+            hifenizar: bool = False) -> list[str]:
+    """Quebra por palavras. Respeita quebras manuais com '\\n'.
+
+    Com hifenizar=True, palavras que não cabem sozinhas na linha são divididas com hífen.
+    """
     linhas: list[str] = []
     for paragrafo in txt.split("\n"):
         atual = ""
-        for palavra in paragrafo.split():
+        palavras = paragrafo.split()
+        while palavras:
+            palavra = palavras.pop(0)
             teste = f"{atual} {palavra}".strip()
-            if atual and largura(teste, familia, peso, tamanho) > max_larg:
-                linhas.append(atual)
-                atual = palavra
-            else:
+            if largura(teste, familia, peso, tamanho) <= max_larg:
                 atual = teste
+                continue
+            if hifenizar and largura(palavra, familia, peso, tamanho) > max_larg:
+                k = _hifenizar(palavra, familia, peso, tamanho, max_larg, atual)
+                if k is None and atual:
+                    linhas.append(atual)
+                    atual = ""
+                    k = _hifenizar(palavra, familia, peso, tamanho, max_larg, "")
+                if k is not None:
+                    linhas.append(f"{atual} {palavra[:k]}-".strip())
+                    atual = ""
+                    palavras.insert(0, palavra[k:])
+                    continue
+            if atual:
+                linhas.append(atual)
+            atual = palavra
         linhas.append(atual)
     return linhas
 
 
-def ajustar(txt, familia, peso, tamanho, max_larg, max_linhas, minimo=None):
+def ajustar(txt, familia, peso, tamanho, max_larg, max_linhas, minimo=None, referencia=None):
     """Diminui o tamanho até o texto caber em max_linhas e max_larg."""
     minimo = minimo or tamanho * 0.55
+
+    def cabe(linhas, t):
+        return len(linhas) <= max_linhas and all(largura(l, familia, peso, t) <= max_larg for l in linhas)
+
     t = tamanho
     while True:
         linhas = quebrar(txt, familia, peso, t, max_larg)
-        cabe = len(linhas) <= max_linhas and all(
-            largura(l, familia, peso, t) <= max_larg for l in linhas
-        )
-        if cabe or t <= minimo:
+        if cabe(linhas, t):
+            return linhas, t
+        # antes de reduzir muito a letra, tenta hifenizar palavras longas
+        if t <= (referencia or tamanho) * 0.86:
+            hif = quebrar(txt, familia, peso, t, max_larg, hifenizar=True)
+            if cabe(hif, t):
+                return hif, t
+        if t <= minimo:
             return linhas, t
         t *= 0.94
 
@@ -104,11 +165,12 @@ def bloco(
     curvas=False,
     caixa_alta=False,
     id_=None,
+    referencia=None,
 ):
     """Devolve (svg, altura_total, caixa) de um bloco de texto já quebrado e ajustado."""
     if caixa_alta:
         txt = txt.upper()
-    linhas, t = ajustar(txt, familia, peso, tamanho, max_larg, max_linhas)
+    linhas, t = ajustar(txt, familia, peso, tamanho, max_larg, max_linhas, referencia=referencia)
     _, _, _, _, peso_real = carregar(familia, peso)
     alt_linha = t * entrelinha
     altura = alt_linha * (len(linhas) - 1) + t * 0.72  # 0.72 ~ altura das maiúsculas
