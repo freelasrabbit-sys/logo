@@ -51,16 +51,25 @@ def carregar_config(caminho):
     base = os.path.dirname(os.path.abspath(caminho))
     if not os.path.isabs(cfg["logo"]):
         cfg["logo"] = os.path.join(base, cfg["logo"])
+    estilo = cfg.get("estilo", "classico")  # infantil | classico
+    cfg.setdefault("fonte", "Fredoka" if estilo == "infantil" else "Poppins")
+    cfg.setdefault("estilo_icone", "solido" if estilo == "infantil" else "linha")
+    solido = cfg["estilo_icone"] == "solido"
     itens = []
     for it in cfg["itens"]:
         it = {"texto": it} if isinstance(it, str) else dict(it)
         if not it.get("icone") or not icones.existe(it["icone"]):
             pedido = it.get("icone")
-            it["icone"] = icones.sugerir(it.get("icone") or it["texto"], 1)[0]
+            it["icone"] = icones.sugerir(it.get("icone") or it["texto"], 1, solido)[0]
             if pedido:
                 print(f"aviso: ícone '{pedido}' não existe; usando '{it['icone']}'", file=sys.stderr)
         itens.append(it)
     cfg["itens"] = itens
+    # conjunto coerente: se algum ícone não tiver versão preenchida, todos saem em traço grosso
+    if solido and not all(icones.tem_solido(i["icone"]) for i in itens):
+        faltam = [i["icone"] for i in itens if not icones.tem_solido(i["icone"])]
+        print(f"aviso: sem versão preenchida para {faltam}; usando traço grosso em todos", file=sys.stderr)
+        cfg["estilo_icone"] = "negrito"
     return cfg, base
 
 
@@ -72,7 +81,8 @@ def montar_svg(cfg, layout, curvas, formato, fundo):
     uri, lw, lh = C.logo_data_uri(cfg["logo"])
     ctx = Ctx(itens=cfg["itens"], cores_itens=cores_itens, paleta=paleta, logo_uri=uri,
               logo_w=lw, logo_h=lh, fundo=fundo, familia=cfg.get("fonte", "Poppins"),
-              curvas=curvas, slogan=cfg.get("slogan", ""), sombra=cfg.get("sombra", True))
+              curvas=curvas, slogan=cfg.get("slogan", ""), sombra=cfg.get("sombra", True),
+              estilo_icone=cfg.get("estilo_icone", "linha"))
     D = func(ctx)
 
     x0, y0, x1, y1 = D.caixa
@@ -126,14 +136,14 @@ def nome_arquivo(cfg, layout):
     return re.sub(r"[^a-z0-9_-]", "", base)
 
 
-def previa(cfg, saida, formato, fundo):
-    """Uma folha com todos os layouts, para escolher qual seguir."""
+def previa(cfg, saida, formato, fundo, layouts=None, rotulo="previa-layouts", lado=520):
+    """Uma folha com vários layouts lado a lado, para escolher qual seguir."""
     miniaturas = []
-    for nome in LAYOUTS:
+    for nome in layouts or LAYOUTS:
         svg, dims = montar_svg(cfg, nome, True, formato, fundo)
-        img = Image.open(io.BytesIO(png_de_svg(svg, dims, 520))).convert("RGB")
+        img = Image.open(io.BytesIO(png_de_svg(svg, dims, lado))).convert("RGB")
         miniaturas.append((nome, img))
-    col = 4
+    col = min(4, len(miniaturas))
     lin = (len(miniaturas) + col - 1) // col
     w, h = miniaturas[0][1].size
     folha = Image.new("RGB", (col * (w + 20) + 20, lin * (h + 60) + 20), "#e6e6e6")
@@ -142,7 +152,7 @@ def previa(cfg, saida, formato, fundo):
         x, y = 20 + (k % col) * (w + 20), 20 + (k // col) * (h + 60)
         folha.paste(img, (x, y))
         d.text((x + 6, y + h + 12), nome, fill="#222222", font_size=26)
-    caminho = os.path.join(saida, nome_arquivo(cfg, "previa-layouts") + ".png")
+    caminho = os.path.join(saida, nome_arquivo(cfg, rotulo) + ".png")
     folha.save(caminho)
     return caminho
 
@@ -157,6 +167,7 @@ def main():
     ap.add_argument("--saida")
     ap.add_argument("--largura-png", type=int, help="largura do PNG em pixels")
     ap.add_argument("--previa", action="store_true", help="gera folha com todos os layouts")
+    ap.add_argument("--opcoes", help="3 layouts separados por vírgula: gera um PNG de cada + folha comparativa")
     a = ap.parse_args()
 
     cfg, base = carregar_config(a.config)
@@ -170,6 +181,16 @@ def main():
     print("ícones:", ", ".join(f"{i['texto']!r}->{i['icone']}" for i in cfg["itens"]))
     if a.previa:
         print(previa(cfg, saida, formato, fundo))
+        return
+    if a.opcoes:
+        escolhidos = [x.strip() for x in a.opcoes.split(",") if x.strip()]
+        for k, lay in enumerate(escolhidos, 1):
+            svg, dims = montar_svg(cfg, lay, True, formato, fundo)
+            p = os.path.join(saida, f"{nome_arquivo(cfg, lay)}-opcao{k}.png")
+            with open(p, "wb") as f:
+                f.write(png_de_svg(svg, dims, a.largura_png))
+            print(p)
+        print(previa(cfg, saida, formato, fundo, escolhidos, "opcoes", 900))
         return
 
     nome = nome_arquivo(cfg, layout)

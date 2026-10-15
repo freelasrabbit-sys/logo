@@ -1,0 +1,12 @@
+{
+  "escola": "Teste Infantil",
+  "logo": "../../../../assets/emblema.jpg",
+  "estilo": "infantil",
+  "itens": [
+    {"texto": "Aprender Brincando", "descricao": "Atividades lúdicas todos os dias", "icone": "puzzle"},
+    {"texto": "Alimentação Saudável", "descricao": "Cardápio feito por nutricionista", "icone": "apple"},
+    {"texto": "Escola e Família", "icone": "home"},
+    {"texto": "Ensino Bilíngue", "descricao": "Inglês desde o maternal", "icone": "star"},
+    {"texto": "Educadores Especializados", "icone": "award"}
+  ]
+}

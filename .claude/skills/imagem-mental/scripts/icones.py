@@ -133,12 +133,25 @@ def _tags():
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
+def _nos_cheios():
+    with open(os.path.join(ICONES_DIR, "tabler-filled.json"), encoding="utf-8") as f:
+        return json.load(f)
+
+
 def existe(nome: str) -> bool:
     return nome in _nos()
 
 
-def sugerir(texto: str, n: int = 8) -> list[str]:
-    """Sugere ícones para um texto em português (ou inglês)."""
+def tem_solido(nome: str) -> bool:
+    return nome in _nos_cheios()
+
+
+def sugerir(texto: str, n: int = 8, solido: bool = False) -> list[str]:
+    """Sugere ícones para um texto em português (ou inglês).
+
+    Com solido=True, os que têm versão preenchida vêm primeiro.
+    """
     t = _norm(texto)
     achados: list[str] = []
     for chave, icone in PT.items():
@@ -156,22 +169,37 @@ def sugerir(texto: str, n: int = 8) -> list[str]:
     for nome, _ in sorted(pontos.items(), key=lambda kv: (-kv[1], len(kv[0]))):
         if nome not in achados:
             achados.append(nome)
+    if solido:
+        achados.sort(key=lambda nome: not tem_solido(nome))
     return achados[:n] or ["star"]
 
 
 def svg(nome: str, cx: float, cy: float, tamanho: float, cor: str, espessura: float = 1.6,
-        id_=None) -> str:
-    """Desenha o ícone centrado em (cx, cy) com largura `tamanho`."""
+        id_=None, estilo: str = "linha") -> str:
+    """Desenha o ícone centrado em (cx, cy) com largura `tamanho`.
+
+    estilo: 'linha' (traço fino), 'solido' (preenchido) ou 'negrito' (traço grosso,
+    usado quando algum ícone do conjunto não tem versão preenchida).
+    """
     if not existe(nome):
         nome = sugerir(nome, 1)[0]
     esc = tamanho / 24
+    id_attr = f' id="{id_}"' if id_ else ""
+    if estilo == "solido" and tem_solido(nome):
+        partes = []
+        for tag, attrs in _nos_cheios()[nome]:
+            a = " ".join(f'{k}="{v}"' for k, v in attrs.items() if k not in ("key", "fill", "stroke"))
+            partes.append(f"<{tag} {a}/>")
+        return (f'<g{id_attr} data-icone="{nome}" transform="translate({cx - tamanho / 2:.2f} '
+                f'{cy - tamanho / 2:.2f}) scale({esc:.4f})" fill="{cor}" stroke="none">{"".join(partes)}</g>')
+    if estilo in ("solido", "negrito"):
+        espessura = max(espessura, 2.3)
     partes = []
     for tag, attrs in _nos()[nome]:
         if attrs.get("stroke") == "none":
             continue
         a = " ".join(f'{k}="{v}"' for k, v in attrs.items() if k != "key")
         partes.append(f"<{tag} {a}/>")
-    id_attr = f' id="{id_}"' if id_ else ""
     return (
         f'<g{id_attr} data-icone="{nome}" transform="translate({cx - tamanho / 2:.2f} {cy - tamanho / 2:.2f}) '
         f'scale({esc:.4f})" fill="none" stroke="{cor}" stroke-width="{espessura}" '

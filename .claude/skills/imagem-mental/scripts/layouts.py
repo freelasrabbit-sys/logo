@@ -41,6 +41,8 @@ class Ctx:
     curvas: bool = True
     slogan: str = ""
     sombra: bool = True
+    estilo_icone: str = "linha"  # linha | solido | negrito
+    limites: list = field(default_factory=list)
 
     @property
     def n(self):
@@ -58,8 +60,6 @@ class Ctx:
         """Cor para textos escritos direto sobre o fundo."""
         return C.texto_sobre(self.fundo, "#3a3a3a")
 
-    limites: list = field(default_factory=list)
-
     def texto(self, txt, x, y, **kw):
         kw.setdefault("familia", self.familia)
         kw.setdefault("curvas", self.curvas)
@@ -67,8 +67,34 @@ class Ctx:
         self.limites.append(caixa)
         return svg, altura
 
+    def rotulo(self, i, x, y, *, tamanho, max_larg, max_linhas=3, peso=600, cor="#333333",
+               alinhamento="middle", vertical="middle", caixa_alta=False, cor_desc=None, id_=None):
+        """Título do item e, se houver, a descrição em letra menor logo abaixo."""
+        item = self.itens[i]
+        desc = (item.get("descricao") or "").strip()
+        comum = dict(alinhamento=alinhamento, max_larg=max_larg)
+        if not desc:
+            return self.texto(item["texto"], x, y, tamanho=tamanho, peso=peso, cor=cor, max_linhas=max_linhas,
+                              vertical=vertical, caixa_alta=caixa_alta, id_=f"texto-{i + 1}", **comum)
+        titulo = item["texto"].upper() if caixa_alta else item["texto"]
+        lt, tt = texto.ajustar(titulo, self.familia, peso, tamanho * 0.95, max_larg, min(max_linhas, 2))
+        ld, td = texto.ajustar(desc, self.familia, 400, max(tt * 0.74, 15), max_larg * 1.08,
+                               max(max_linhas, 3), minimo=13)
+        h_t = tt * 1.15 * (len(lt) - 1) + tt * 0.72
+        h_d = td * 1.25 * (len(ld) - 1) + td * 0.72
+        vao = tt * 0.5
+        total = h_t + vao + h_d
+        topo = {"middle": y - total / 2, "top": y, "bottom": y - total}[vertical]
+        s1, _ = self.texto(titulo, x, topo, tamanho=tt, peso=peso, cor=cor, max_linhas=2,
+                           vertical="top", id_=f"titulo-{i + 1}", **comum)
+        s2, _ = self.texto(desc, x, topo + h_t + vao, tamanho=td, peso=400, cor=cor_desc or cor,
+                           max_linhas=len(ld), vertical="top", entrelinha=1.25, alinhamento=alinhamento,
+                           max_larg=max_larg * 1.08, id_=f"descricao-{i + 1}")
+        return f'<g id="texto-{i + 1}">{s1}{s2}</g>', total
+
     def icone(self, i, cx, cy, tam, cor, espessura=1.6):
-        return icones.svg(self.itens[i]["icone"], cx, cy, tam, cor, espessura, id_=f"icone-{i + 1}")
+        return icones.svg(self.itens[i]["icone"], cx, cy, tam, cor, espessura, id_=f"icone-{i + 1}",
+                          estilo=self.estilo_icone)
 
     def logo(self, cx, cy, max_w, max_h):
         esc = min(max_w / self.logo_w, max_h / self.logo_h)
@@ -141,8 +167,8 @@ def arco(ctx: Ctx) -> Desenho:
         D.add("Ícones", ctx.icone(i, ix, iy, 62, C.texto_sobre(cor)))
         tx, ty = polar(cx, cy, r_out + 30, meio)
         h, v = ancora(meio)
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], tx, ty, peso=500, tamanho=25, cor=ctx.texto_fora,
-                           max_larg=250, max_linhas=3, alinhamento=h, vertical=v, id_=f"texto-{i + 1}")
+        svg, _ = ctx.rotulo(i, tx, ty, peso=500, tamanho=25, cor=ctx.texto_fora,
+                           max_larg=250, max_linhas=3, alinhamento=h, vertical=v)
         D.add("Textos", svg)
     D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{r_in - 9}" fill="#ffffff"/>')
     D.add("Logo", ctx.logo_no_circulo(cx, cy, r_in - 22)[0])
@@ -175,8 +201,8 @@ def anel(ctx: Ctx) -> Desenho:
         tx, ty = polar(cx, cy, rt, meio)
         corda = 2 * rt * math.sin(math.radians(passo / 2))
         cor_txt = escuro if cor == tinta else C.texto_sobre(cor)
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], tx, ty, peso=600, tamanho=21, cor=cor_txt,
-                           max_larg=min(corda * 0.78, 190), max_linhas=3, id_=f"texto-{i + 1}")
+        svg, _ = ctx.rotulo(i, tx, ty, peso=600, tamanho=21, cor=cor_txt,
+                           max_larg=min(corda * 0.78, 190), max_linhas=3)
         D.add("Textos", svg)
     D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{r_in - 10}" fill="#ffffff"/>')
     D.add("Logo", ctx.logo_no_circulo(cx, cy, r_in - 22)[0])
@@ -205,9 +231,8 @@ def leque(ctx: Ctx) -> Desenho:
         rt = r_out - 175
         tx, ty = polar(cx, cy, rt, meio)
         corda = 2 * rt * math.sin(math.radians(passo / 2))
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], tx, ty, peso=500, tamanho=20, cor=cor_txt,
-                           max_larg=min(corda * 0.8, 200), max_linhas=4, caixa_alta=True,
-                           id_=f"texto-{i + 1}")
+        svg, _ = ctx.rotulo(i, tx, ty, peso=500, tamanho=20, cor=cor_txt,
+                           max_larg=min(corda * 0.8, 200), max_linhas=4, caixa_alta=True)
         D.add("Textos", svg)
     # maior logo que cabe no semicírculo interno, apoiado na base
     a, folga, lim = ctx.logo_w / ctx.logo_h, 12, (r_in - 14)
@@ -247,9 +272,9 @@ def petalas(ctx: Ctx) -> Desenho:
         D.add("Ícones", ctx.icone(i, hx, hy, r * 0.75, C.texto_sobre(cor), 1.7))
         tx, ty = polar(cx, cy, dist + r + 34, beta)
         h, v = ancora(beta)
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], tx, ty, peso=700, tamanho=26,
+        svg, _ = ctx.rotulo(i, tx, ty, peso=700, tamanho=26,
                            cor=C.legivel_em(cor, ctx.fundo, 3.0), max_larg=230, max_linhas=3,
-                           alinhamento=h, vertical=v, id_=f"texto-{i + 1}")
+                           alinhamento=h, vertical=v)
         D.add("Textos", svg)
     if C.luminancia(ctx.fundo) < 0.8:  # fundo colorido: logo sobre disco branco
         D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{dist - k - 4:.2f}" fill="#ffffff"/>')
@@ -286,8 +311,8 @@ def arvore(ctx: Ctx) -> Desenho:
         D.add("Formas", f'<circle id="folha-{i + 1}" cx="{fx:.2f}" cy="{fy:.2f}" r="{rf:.2f}" fill="{folha[i]}"/>')
         cor_txt = C.texto_sobre(folha[i])
         D.add("Ícones", ctx.icone(i, fx, fy - rf * 0.38, rf * 0.42, cor_txt, 1.8))
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], fx, fy + rf * 0.2, peso=600, tamanho=17, cor=cor_txt,
-                           max_larg=rf * 1.45, max_linhas=4, caixa_alta=True, id_=f"texto-{i + 1}")
+        svg, _ = ctx.rotulo(i, fx, fy + rf * 0.2, peso=600, tamanho=17, cor=cor_txt,
+                           max_larg=rf * 1.45, max_linhas=4, caixa_alta=True)
         D.add("Textos", svg)
     D.add("Formas", sombra(circulo_d(cx, cy, rc + 16), ctx, 8, 0.12))
     D.add("Formas", f'<circle id="anel-central" cx="{cx}" cy="{cy}" r="{rc}" fill="#ffffff" '
@@ -350,14 +375,14 @@ def baloes(ctx: Ctx) -> Desenho:
         D.add("Decoração", f'<circle cx="{ax:.2f}" cy="{ay:.2f}" r="10" fill="#ffffff" stroke="{cor}" '
                            f'stroke-width="3"/><circle cx="{ax:.2f}" cy="{ay:.2f}" r="4.5" fill="{cor}"/>')
         # selo com o ícone
-        sx, sy = polar(bx, by, rb * 0.86, -140)
+        sx, sy = polar(bx, by, rb * 0.98, -128)
         rs = rb * 0.34
         D.add("Formas", sombra(circulo_d(sx, sy, rs), ctx, 4, 0.12))
         D.add("Formas", f'<circle id="selo-{i + 1}" cx="{sx:.2f}" cy="{sy:.2f}" r="{rs:.2f}" fill="#ffffff" '
                         f'stroke="#f1f1f1" stroke-width="3"/>')
         D.add("Ícones", ctx.icone(i, sx, sy, rs * 1.15, C.legivel_em(cor, "#ffffff", 2.6), 1.7))
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], bx, by + 6, peso=700, tamanho=25,
-                           cor=C.texto_sobre(cor), max_larg=rb * 1.5, max_linhas=4, id_=f"texto-{i + 1}")
+        svg, _ = ctx.rotulo(i, bx, by + 6, peso=700, tamanho=25,
+                           cor=C.texto_sobre(cor), max_larg=rb * 1.4, max_linhas=4)
         D.add("Textos", svg)
     if ctx.slogan:
         D.usou_slogan = True
@@ -402,8 +427,8 @@ def orbita(ctx: Ctx) -> Desenho:
             D.add("Formas", f'<circle id="item-{i + 1}" cx="{px:.2f}" cy="{py:.2f}" r="{rc:.2f}" fill="{cor}"/>')
             cor_el = escuro if C.luminancia(cor) > 0.35 else "#ffffff"
             D.add("Ícones", ctx.icone(i, px, py - rc * 0.4, rc * 0.48, cor_el, 2.1))
-            svg, _ = ctx.texto(ctx.itens[i]["texto"], px, py + rc * 0.26, peso=600, tamanho=18, cor=cor_el,
-                               max_larg=rc * 1.55, max_linhas=3, id_=f"texto-{i + 1}")
+            svg, _ = ctx.rotulo(i, px, py + rc * 0.26, peso=600, tamanho=18, cor=cor_el,
+                               max_larg=rc * 1.55, max_linhas=3)
             D.add("Textos", svg)
     D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{R}" fill="#ffffff"/>')
     D.add("Logo", ctx.logo_no_circulo(cx, cy, R - 8)[0])
@@ -446,9 +471,9 @@ def onda(ctx: Ctx) -> Desenho:
                         f'fill="#ffffff" stroke="{C.clarear(cor1, 0.75)}" stroke-width="3"/>')
         D.add("Ícones", ctx.icone(i, xc, iy, r * 0.5, cor_i, 2))
         ty = cy - r - esp / 2 - 22 if cima else cy + r + esp / 2 + 22
-        svg, _ = ctx.texto(ctx.itens[i]["texto"], xc, ty, peso=600, tamanho=22,
+        svg, _ = ctx.rotulo(i, xc, ty, peso=600, tamanho=22,
                            cor=C.legivel_em(C.escurecer(cor1, 0.1), ctx.fundo, 4), max_larg=2 * r * 1.45,
-                           max_linhas=3, vertical="bottom" if cima else "top", id_=f"texto-{i + 1}")
+                           max_linhas=3, vertical="bottom" if cima else "top")
         D.add("Textos", svg)
     py = cy + r + esp / 2 + 22 + 105 + 70
     lh = 105
