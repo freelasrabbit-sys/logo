@@ -654,6 +654,114 @@ def mapa(ctx: Ctx) -> Desenho:
     return D
 
 
+# ---------------------------------------- 12. CICLO (criado para o Hermínio Silva)
+
+def ciclo(ctx: Ctx) -> Desenho:
+    """Anel de setas encadeadas (formação contínua): ícones nas setas, títulos coloridos por fora."""
+    D = Desenho()
+    cx, cy, r_in, r_out = 500, 500, 215, 315
+    rm = (r_in + r_out) / 2
+    passo = 360 / ctx.n
+    gap, ponta = 2.2, 9
+    for i in range(ctx.n):
+        a0 = -90 - passo / 2 + i * passo + gap
+        a1 = a0 + passo - 2 * gap
+        cor = ctx.cores_itens[i]
+        grande = 1 if (a1 - a0) > 180 else 0
+        p = lambda r, a: polar(cx, cy, r, a)  # noqa: E731
+        o0, o1, i0, i1 = p(r_out, a0), p(r_out, a1), p(r_in, a1), p(r_in, a0)
+        tip, notch = p(rm, a1 + ponta), p(rm, a0 + ponta)
+        d = (f"M{o0[0]:.2f} {o0[1]:.2f} A{r_out} {r_out} 0 {grande} 1 {o1[0]:.2f} {o1[1]:.2f} "
+             f"L{tip[0]:.2f} {tip[1]:.2f} L{i0[0]:.2f} {i0[1]:.2f} "
+             f"A{r_in} {r_in} 0 {grande} 0 {i1[0]:.2f} {i1[1]:.2f} L{notch[0]:.2f} {notch[1]:.2f}Z")
+        D.add("Formas", sombra(d, ctx, 6, 0.08))
+        D.add("Formas", f'<path id="seta-{i + 1}" d="{d}" fill="{cor}" stroke="{cor}" stroke-width="6" '
+                        f'stroke-linejoin="round"/>')
+        meio = (a0 + a1) / 2 + ponta / 2
+        ix, iy = polar(cx, cy, rm, meio)
+        D.add("Ícones", ctx.icone(i, ix, iy, 54, C.texto_sobre(cor), 2))
+        tx, ty = polar(cx, cy, r_out + 34, meio)
+        h, v = ancora(meio)
+        svg, _ = ctx.rotulo(i, tx, ty, tamanho=28, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
+                            max_larg=240, max_linhas=3, alinhamento=h, vertical=v)
+        D.add("Textos", svg)
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{r_in - 16}" fill="#ffffff"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, r_in - 28)[0])
+    D.caixa = (cx - r_out - 10, cy - r_out - 10, cx + r_out + 10, cy + r_out + 10)
+    return D
+
+
+# ------------------------------------------ 13. SOL (criado para o Hermínio Silva)
+
+def sol(ctx: Ctx) -> Desenho:
+    """Logo no centro como um sol: raios coloridos até selos com ícone, títulos por fora."""
+    D = Desenho()
+    cx, cy, R = 500, 500, 190
+    d_selo, r_selo = 360, 86
+    D.add("Decoração", f'<circle cx="{cx}" cy="{cy}" r="{R + 22}" fill="none" stroke="#e9e9e9" stroke-width="3" '
+                       f'stroke-dasharray="3 10" stroke-linecap="round"/>')
+    passo = 360 / ctx.n
+    for i in range(ctx.n):
+        ang = -90 + i * passo
+        cor = ctx.cores_itens[i]
+        x0, y0 = polar(cx, cy, R + 38, ang)
+        x1, y1 = polar(cx, cy, d_selo - r_selo + 4, ang)
+        D.add("Formas", f'<line id="raio-{i + 1}" x1="{x0:.2f}" y1="{y0:.2f}" x2="{x1:.2f}" y2="{y1:.2f}" '
+                        f'stroke="{cor}" stroke-width="20" stroke-linecap="round"/>')
+        # raiozinhos entre os principais
+        mx0, my0 = polar(cx, cy, R + 42, ang + passo / 2)
+        mx1, my1 = polar(cx, cy, R + 82, ang + passo / 2)
+        D.add("Decoração", f'<line x1="{mx0:.2f}" y1="{my0:.2f}" x2="{mx1:.2f}" y2="{my1:.2f}" '
+                           f'stroke="{C.clarear(cor, 0.55)}" stroke-width="10" stroke-linecap="round"/>')
+        sx, sy = polar(cx, cy, d_selo, ang)
+        D.add("Formas", sombra(circulo_d(sx, sy, r_selo), ctx, 6, 0.10))
+        D.add("Formas", f'<circle id="selo-{i + 1}" cx="{sx:.2f}" cy="{sy:.2f}" r="{r_selo}" fill="{cor}" '
+                        f'stroke="#ffffff" stroke-width="6"/>')
+        D.add("Ícones", ctx.icone(i, sx, sy, 80, C.texto_sobre(cor), 2))
+        # título centralizado sob o selo (acima, quando o selo está no topo)
+        acima = math.sin(math.radians(ang)) < -0.8
+        ty = sy - r_selo - 18 if acima else sy + r_selo + 18
+        svg, _ = ctx.rotulo(i, sx, ty, tamanho=32, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
+                            max_larg=270, max_linhas=3, vertical="bottom" if acima else "top")
+        D.add("Textos", svg)
+    D.add("Formas", sombra(circulo_d(cx, cy, R), ctx, 8, 0.08))
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{R}" fill="#ffffff" stroke="#f1f1f1" stroke-width="3"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, R - 16)[0])
+    ext = d_selo + r_selo + 10
+    D.caixa = (cx - ext, cy - ext, cx + ext, cy + ext)
+    return D
+
+
+# ------------------------------------------ 14. FLOR (criado para o Hermínio Silva)
+
+def flor(ctx: Ctx) -> Desenho:
+    """Flor: círculos coloridos (pétalas) encostados uns nos outros em volta do logo, conteúdo dentro."""
+    D = Desenho()
+    cx, cy, R = 500, 500, 205
+    meia = math.radians(180 / ctx.n)
+    rc = min(230, R / (1 / math.sin(meia) - 0.72))
+    dist = rc / math.sin(meia) * 0.97
+    for i in range(ctx.n):
+        ang = -90 + i * 360 / ctx.n
+        cor = ctx.cores_itens[i]
+        px, py = polar(cx, cy, dist, ang)
+        D.add("Formas", f'<circle id="petala-{i + 1}" cx="{px:.2f}" cy="{py:.2f}" r="{rc:.2f}" fill="{cor}" '
+                        f'stroke="#ffffff" stroke-width="10"/>')
+        # conteúdo na parte visível da pétala (mais para fora)
+        qx, qy = polar(cx, cy, dist + rc * 0.28, ang)
+        cor_el = C.texto_sobre(cor)
+        D.add("Ícones", ctx.icone(i, qx, qy - rc * 0.27, rc * 0.38, cor_el, 2))
+        svg, _ = ctx.rotulo(i, qx, qy + rc * 0.17, tamanho=31, peso=600, cor=cor_el,
+                            max_larg=rc * 1.3, max_linhas=3)
+        D.add("Textos", svg)
+    D.add("Formas", sombra(circulo_d(cx, cy, R), ctx, 8, 0.12))
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{R}" fill="#ffffff" stroke="#ffffff" stroke-width="10"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, R - 18)[0])
+    ext = dist + rc + 6
+    D.caixa = (cx - ext, cy - ext, cx + ext, cy + ext)
+    return D
+
+
 LAYOUTS = {
     "arco": (arco, "marca", "Anel em 'C' com ícones no anel e textos por fora (modelo Athena)"),
     "anel": (anel, "marca", "Anel completo em fatias com selo e texto dentro (modelo Koala)"),
@@ -667,4 +775,7 @@ LAYOUTS = {
     "pilares": (pilares, "marca", "Templo: logo no alto e cada tópico é uma coluna (criado para o CTO)"),
     "degraus": (degraus, "marca", "Escada ascendente com seta de crescimento e logo acima (criado para o CTO)"),
     "mapa": (mapa, "alternada", "Mapa mental: logo no centro, galhos curvos até cartões (criado para o CTO)"),
+    "ciclo": (ciclo, "arco-iris", "Anel de setas encadeadas, títulos coloridos por fora (criado para o Hermínio Silva)"),
+    "sol": (sol, "arco-iris", "Logo como sol, raios até selos coloridos (criado para o Hermínio Silva)"),
+    "flor": (flor, "arco-iris", "Pétalas circulares coloridas em volta do logo (criado para o Hermínio Silva)"),
 }

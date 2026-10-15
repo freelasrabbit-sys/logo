@@ -95,6 +95,9 @@ layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para re
 | `pilares` | criado para o CTO | clássico/tradicional, "pilares da escola" | 3–6 | só curtas |
 | `degraus` | criado para o CTO | desempenho, crescimento, logo horizontal | 3–6 | razoável |
 | `mapa` | criado para o CTO | mapa mental clássico, qualquer estilo | 4–8 | boa |
+| `ciclo` | criado para o Hermínio Silva | circular, logo multicolorido, ideia de ciclo/formação contínua | 4–7 | boa (texto fora) |
+| `sol` | criado para o Hermínio Silva | circular, alegre, logo compacto | 4–8 | boa (texto sob o selo) |
+| `flor` | criado para o Hermínio Silva | circular, infantil/colorido, visual forte | 4–7 | só curtas |
 
 ### 3. Monte o JSON
 Crie uma pasta de trabalho e use `exemplos/athena.json` como base. O logo é um caminho

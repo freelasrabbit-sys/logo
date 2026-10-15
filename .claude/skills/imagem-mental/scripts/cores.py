@@ -49,7 +49,9 @@ def contraste(a: str, b: str) -> float:
 
 
 def texto_sobre(fundo: str, escuro="#2b2b2b") -> str:
-    """Branco ou escuro, o que tiver mais contraste com o fundo."""
+    """Branco quando o contraste basta para texto em negrito (>= 3:1); senão, o de mais contraste."""
+    if contraste(fundo, "#ffffff") >= 3.0:
+        return "#ffffff"
     return "#ffffff" if contraste(fundo, "#ffffff") >= contraste(fundo, escuro) else escuro
 
 

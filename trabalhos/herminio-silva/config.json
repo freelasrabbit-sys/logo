@@ -1,0 +1,16 @@
+{
+  "escola": "Instituto Educacional Hermínio Silva",
+  "logo": "logo.png",
+  "estilo": "infantil",
+  "cores": ["#0560b8", "#ea1e16", "#2d9a3d", "#f9ac16", "#0b1f5c"],
+  "cores_itens": ["#0560b8", "#ea1e16", "#2d9a3d", "#f9ac16", "#0b1f5c"],
+  "fundo": "#ffffff",
+  "formato": "quadrado",
+  "itens": [
+    {"texto": "Alfabetização e Letramento", "icone": "abc"},
+    {"texto": "Criatividade e Inovação", "icone": "bulb"},
+    {"texto": "Desenvolvimento Socioemocional", "icone": "mood-smile"},
+    {"texto": "Responsabilidade Social", "icone": "heart-handshake"},
+    {"texto": "Inglês Todos os Dias", "icone": "language"}
+  ]
+}
