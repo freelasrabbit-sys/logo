@@ -35,6 +35,11 @@ combina com cada logo e com cada quantidade de tópicos.
 
 ## Fluxo
 
+### 0. Prepare o ambiente (uma vez por conversa)
+```bash
+pip install cairosvg fonttools pillow numpy potracer brotli
+```
+
 ### 1. Analise antes de desenhar
 Abra o logo (Read) e anote:
 - **Estilo**: `infantil` (traços arredondados, mascote, cores vivas) ou `classico`
