@@ -84,6 +84,11 @@ def montar_svg(cfg, layout, curvas, formato, fundo):
               curvas=curvas, slogan=cfg.get("slogan", ""), sombra=cfg.get("sombra", True),
               estilo_icone=cfg.get("estilo_icone", "linha"))
     D = func(ctx)
+    # todos os tópicos com o mesmo tamanho de letra: refaz usando o menor tamanho que coube
+    if ctx.tamanhos_rotulo and min(ctx.tamanhos_rotulo) < max(ctx.tamanhos_rotulo) * 0.97:
+        ctx.teto_rotulo = min(ctx.tamanhos_rotulo)
+        ctx.limites, ctx.tamanhos_rotulo = [], []
+        D = func(ctx)
 
     x0, y0, x1, y1 = D.caixa
     for a, b, c, d in ctx.limites:  # garante que nenhum texto fique cortado

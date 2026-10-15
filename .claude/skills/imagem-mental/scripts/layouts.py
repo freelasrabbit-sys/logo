@@ -43,6 +43,8 @@ class Ctx:
     sombra: bool = True
     estilo_icone: str = "linha"  # linha | solido | negrito
     limites: list = field(default_factory=list)
+    teto_rotulo: float | None = None  # tamanho único para todos os tópicos (2ª passada)
+    tamanhos_rotulo: list = field(default_factory=list)
 
     @property
     def n(self):
@@ -73,6 +75,11 @@ class Ctx:
         item = self.itens[i]
         desc = (item.get("descricao") or "").strip()
         comum = dict(alinhamento=alinhamento, max_larg=max_larg)
+        if self.teto_rotulo:
+            tamanho = min(tamanho, self.teto_rotulo)
+        titulo_cmp = item["texto"].upper() if caixa_alta else item["texto"]
+        self.tamanhos_rotulo.append(texto.ajustar(titulo_cmp, self.familia, peso, tamanho, max_larg,
+                                                  min(max_linhas, 2) if desc else max_linhas)[1])
         if not desc:
             return self.texto(item["texto"], x, y, tamanho=tamanho, peso=peso, cor=cor, max_linhas=max_linhas,
                               vertical=vertical, caixa_alta=caixa_alta, id_=f"texto-{i + 1}", **comum)
@@ -346,7 +353,7 @@ def baloes(ctx: Ctx) -> Desenho:
     D = Desenho()
     cx, cy, R = 500, 500, 190
     dist = 400
-    rb = min(112, math.pi * dist / ctx.n * 0.52)
+    rb = min(130, math.pi * dist / ctx.n * 0.52)
     D.add("Decoração", sombra(circulo_d(cx, cy, R + 22), ctx, 10, 0.08))
     D.add("Decoração", f'<circle id="aro-central" cx="{cx}" cy="{cy}" r="{R + 22}" fill="#ffffff" '
                        f'stroke="#9d9d9d" stroke-width="2.5"/>')
@@ -375,14 +382,17 @@ def baloes(ctx: Ctx) -> Desenho:
         D.add("Decoração", f'<circle cx="{ax:.2f}" cy="{ay:.2f}" r="10" fill="#ffffff" stroke="{cor}" '
                            f'stroke-width="3"/><circle cx="{ax:.2f}" cy="{ay:.2f}" r="4.5" fill="{cor}"/>')
         # selo com o ícone
-        sx, sy = polar(bx, by, rb * 0.98, -128)
+        ang_selo = -128
+        if abs((ang_selo - volta + 180) % 360 - 180) < 60:  # não cobrir a ponta do balão
+            ang_selo = -52
+        sx, sy = polar(bx, by, rb * 0.98, ang_selo)
         rs = rb * 0.34
         D.add("Formas", sombra(circulo_d(sx, sy, rs), ctx, 4, 0.12))
         D.add("Formas", f'<circle id="selo-{i + 1}" cx="{sx:.2f}" cy="{sy:.2f}" r="{rs:.2f}" fill="#ffffff" '
                         f'stroke="#f1f1f1" stroke-width="3"/>')
         D.add("Ícones", ctx.icone(i, sx, sy, rs * 1.15, C.legivel_em(cor, "#ffffff", 2.6), 1.7))
         svg, _ = ctx.rotulo(i, bx, by + 6, peso=700, tamanho=25,
-                           cor=C.texto_sobre(cor), max_larg=rb * 1.4, max_linhas=4)
+                           cor=C.texto_sobre(cor), max_larg=rb * 1.62, max_linhas=4)
         D.add("Textos", svg)
     if ctx.slogan:
         D.usou_slogan = True
@@ -475,9 +485,9 @@ def onda(ctx: Ctx) -> Desenho:
                            cor=C.legivel_em(C.escurecer(cor1, 0.1), ctx.fundo, 4), max_larg=2 * r * 1.45,
                            max_linhas=3, vertical="bottom" if cima else "top")
         D.add("Textos", svg)
-    py = cy + r + esp / 2 + 22 + 105 + 70
-    lh = 105
-    img, lw, _ = ctx.logo(500, py, 520, lh)
+    lh = 175
+    py = cy + r + esp / 2 + 22 + 90 + lh / 2 + 40
+    img, lw, _ = ctx.logo(500, py, 600, lh)
     pw = lw + 70
     D.add("Formas", f'<rect id="pilula-logo" x="{500 - pw / 2:.2f}" y="{py - lh / 2 - 18:.2f}" '
                     f'width="{pw:.2f}" height="{lh + 36}" rx="{(lh + 36) / 2:.2f}" fill="#ffffff" '

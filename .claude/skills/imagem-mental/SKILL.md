@@ -105,6 +105,8 @@ antes de mostrar. Verifique:
 - ícone que não combina com o tópico;
 - logo pequeno ou encostando em outros elementos;
 - cores sem contraste;
+- tamanho de letra: o gerador já iguala todos os tópicos pelo menor que coube; se ficou
+  pequeno, encurte o tópico que está limitando ou use um layout com mais espaço;
 - composição desequilibrada.
 
 Corrija e gere de novo. Para quebrar uma linha num ponto específico, use `\n` no texto.
