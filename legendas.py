@@ -17,7 +17,7 @@ import sys
 import tempfile
 from functools import lru_cache
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 W, H = 1080, 1920
 FPS = 30
@@ -214,35 +214,39 @@ def shape_sprite(kind, size, color, extra=0):
     return im.resize((size, size), Image.LANCZOS)
 
 
+LOGO = os.path.join(HERE, "assets/logo_escola.png")
+
+
 @lru_cache(None)
-def rainbow_sprite(radius, band, sweep_q):
-    """Arco-íris desenhado até 'sweep_q' (0..60 → 0..180°)."""
-    S = 2
-    w, h = 2 * radius * S, radius * S + 4
-    im = Image.new("RGBA", (w, h), WHITE + (0,))
-    d = ImageDraw.Draw(im)
-    sweep = 180 * sweep_q / 60
-    if sweep > 0:
-        for i, col in enumerate(RAINBOW):
-            r = (radius - i * band) * S
-            d.pieslice([w / 2 - r, h - r, w / 2 + r, h + r], 180, 180 + sweep, fill=col + (255,))
-        r = (radius - len(RAINBOW) * band) * S
-        d.pieslice([w / 2 - r, h - r, w / 2 + r, h + r], 0, 360, fill=WHITE + (0,))
-        # apaga o miolo
-        mask = Image.new("L", (w, h), 255)
-        ImageDraw.Draw(mask).ellipse([w / 2 - r, h - r, w / 2 + r, h + r], fill=0)
-        im.putalpha(Image.composite(im.getchannel("A"), Image.new("L", (w, h), 0), mask))
-    return im.resize((w // S, h // S), Image.LANCZOS)
+def logo_sprite(max_w, max_h):
+    """Logo da escola (PNG com transparência) recortado, com contorno branco e sombra."""
+    im = Image.open(LOGO).convert("RGBA")
+    im = im.crop(im.getchannel("A").getbbox() or (0, 0, im.width, im.height))
+    k = min(max_w / im.width, max_h / im.height)
+    im = im.resize((max(1, int(im.width * k)), max(1, int(im.height * k))), Image.LANCZOS)
+    pad = 24
+    out = Image.new("RGBA", (im.width + 2 * pad, im.height + 2 * pad + 10), WHITE + (0,))
+    a = Image.new("L", out.size, 0)
+    a.paste(im.getchannel("A"), (pad, pad))
+    halo = a.filter(ImageFilter.MaxFilter(13)).filter(ImageFilter.GaussianBlur(2))
+    shadow = Image.new("RGBA", out.size, NAVY + (0,))
+    shadow.putalpha(halo.point(lambda v: int(v * 0.55)))
+    out.alpha_composite(shadow, (0, 10))
+    glow = Image.new("RGBA", out.size, WHITE + (0,))
+    glow.putalpha(halo)
+    out.alpha_composite(glow)
+    out.alpha_composite(im, (pad, pad))
+    return out
 
 
 def get_sprite(key):
     kind = key[0]
+    if kind == "logo":
+        return logo_sprite(*key[1:])
     if kind == "text":
         return text_sprite(*key[1:])
     if kind == "pill":
         return pill_sprite(*key[1:])
-    if kind == "rainbow":
-        return rainbow_sprite(*key[1:])
     return shape_sprite(*key)
 
 
@@ -424,14 +428,16 @@ confetti(540, BOT1, 7.1, n=34, seed=2, speed=(800, 1400))
 # 5 — "Aqui no Espaço Criança Feliz"
 line([("AQUI", 8.85, 100, WHITE, dict(inn="drop")), ("NO", 9.0, 100, WHITE, dict(inn="drop"))],
      BOT0 - 40, 10.45, out="down")
-
-
-rb = add(("rainbow", 360, 20, 60), 540, BOT1 + 70, 9.1, 10.45, inn="none", out="pop", idle=0, z=3)
-rb["sweep"] = (9.1, 9.65)
-word("ESPAÇO", 540, BOT1 + 10, 9.16, 10.45, 110, YELLOW, inn="squash", out="down")
-letters("CRIANÇA FELIZ", 540, BOT2 + 20, 9.56, 10.45, 125, RAINBOW, stagger=0.04, inn="drop",
-        out="down", idle=4)
-sparkles(540, BOT1 - 120, 9.6, 10.45, 400, [YELLOW, PINK, CYAN], n=5, seed=9)
+shape("burst", 540, BOT1 + 40, 9.12, 10.45, 820, WHITE, 18, inn="pop", spin=25, z=3, alpha=0.85)
+if os.path.exists(LOGO):
+    add(("logo", 820, 400), 540, BOT1 + 40, 9.16, 10.45, inn="squash", out="down", idle=4, pulse=0.02,
+        z=5, din=0.45)
+else:  # sem o PNG do logo: nome da escola em texto
+    word("ESPAÇO", 540, BOT1 - 20, 9.16, 10.45, 110, YELLOW, inn="squash", out="down")
+    letters("CRIANÇA FELIZ", 540, BOT2 - 10, 9.56, 10.45, 125, RAINBOW, stagger=0.04, inn="drop",
+            out="down", idle=4)
+ripple(540, BOT1 + 40, 9.2, YELLOW, 760)
+sparkles(540, BOT1 + 40, 9.4, 10.45, 470, [YELLOW, PINK, CYAN, WHITE], n=7, size=70, seed=9)
 
 # 6 — "cada dia é uma nova aventura"
 line([("CADA", 10.56, 95, WHITE), ("DIA", 10.8, 95, YELLOW, dict(inn="squash")), ("É", 10.94, 95, WHITE),
@@ -654,9 +660,6 @@ def place(canvas, spr, cx, cy, sx, sy, rot, a):
 
 
 def sprite_for(e, t):
-    if "sweep" in e:
-        p = ease_in_out_cubic(clamp01((t - e["sweep"][0]) / (e["sweep"][1] - e["sweep"][0])))
-        return get_sprite(("rainbow", 360, 20, int(round(p * 60))))
     if "roll" in e:
         st, dur = e["roll"]
         if t < st + dur:
