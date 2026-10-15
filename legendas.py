@@ -426,18 +426,18 @@ ripple(540, BOT1, 7.08, YELLOW, 600)
 confetti(540, BOT1, 7.1, n=34, seed=2, speed=(800, 1400))
 
 # 5 — "Aqui no Espaço Criança Feliz"
-line([("AQUI", 8.85, 100, WHITE, dict(inn="drop")), ("NO", 9.0, 100, WHITE, dict(inn="drop"))],
-     BOT0 - 40, 10.45, out="down")
-shape("burst", 540, BOT1 + 40, 9.12, 10.45, 820, WHITE, 18, inn="pop", spin=25, z=3, alpha=0.85)
+line([("AQUI", 8.85, 110, WHITE, dict(inn="drop")), ("NO", 9.0, 110, YELLOW, dict(inn="drop"))],
+     TOP1, 10.3, out="up")
+shape("burst", 540, BOT1 + 20, 9.12, 10.45, 900, WHITE, 18, inn="pop", spin=25, z=3, alpha=0.85)
 if os.path.exists(LOGO):
-    add(("logo", 820, 400), 540, BOT1 + 40, 9.16, 10.45, inn="squash", out="down", idle=4, pulse=0.02,
+    add(("logo", 880, 480), 540, BOT1 + 20, 9.16, 10.45, inn="squash", out="down", idle=4, pulse=0.02,
         z=5, din=0.45)
 else:  # sem o PNG do logo: nome da escola em texto
     word("ESPAÇO", 540, BOT1 - 20, 9.16, 10.45, 110, YELLOW, inn="squash", out="down")
     letters("CRIANÇA FELIZ", 540, BOT2 - 10, 9.56, 10.45, 125, RAINBOW, stagger=0.04, inn="drop",
             out="down", idle=4)
-ripple(540, BOT1 + 40, 9.2, YELLOW, 760)
-sparkles(540, BOT1 + 40, 9.4, 10.45, 470, [YELLOW, PINK, CYAN, WHITE], n=7, size=70, seed=9)
+ripple(540, BOT1 + 20, 9.2, YELLOW, 820)
+sparkles(540, BOT1 + 20, 9.4, 10.45, 470, [YELLOW, PINK, CYAN, WHITE], n=7, size=70, seed=9)
 
 # 6 — "cada dia é uma nova aventura"
 line([("CADA", 10.56, 95, WHITE), ("DIA", 10.8, 95, YELLOW, dict(inn="squash")), ("É", 10.94, 95, WHITE),

@@ -17,6 +17,7 @@ ffmpeg -i build/video_sem_audio.mp4 -i build/trilha.wav -c:v copy -c:a aac -b:a 
 Legendas com tipografia cinética sincronizadas palavra por palavra (tempos em
 `assets/legendas_palavras.json`, transcritos com Whisper), palavras-chave em destaque,
 formas animadas, confetes, transições em faixas nas trocas de cenário e "camera punch".
+No trecho "Aqui no Espaço Criança Feliz" entra o logo da escola (`assets/logo_escola.png`).
 Fontes: Lilita One e Fredoka (OFL, em `assets/fonts/`).
 
 ```bash
