@@ -59,6 +59,16 @@ class Ctx:
         return self.paleta[i % len(self.paleta)]
 
     @property
+    def escuro_marca(self):
+        """Cor escura da marca (para texto/ícone sobre cores claras), ou grafite se não houver."""
+        escura = min(self.paleta, key=C.luminancia)
+        return escura if C.luminancia(escura) < 0.12 else "#2b2b2b"
+
+    def sobre(self, cor):
+        """Branco ou a cor escura da marca, conforme o contraste com `cor`."""
+        return C.texto_sobre(cor, self.escuro_marca)
+
+    @property
     def texto_fora(self):
         """Cor para textos escritos direto sobre o fundo."""
         return C.texto_sobre(self.fundo, "#3a3a3a")
@@ -180,7 +190,7 @@ def arco(ctx: Ctx) -> Desenho:
         D.add("Formas", f'<path id="segmento-{i + 1}" d="{setor(cx, cy, r_in, r_out, a0, a1)}" fill="{cor}" '
                         f'stroke="{ctx.fundo}" stroke-width="7" stroke-linejoin="round"/>')
         ix, iy = polar(cx, cy, (r_in + r_out) / 2, meio)
-        D.add("Ícones", ctx.icone(i, ix, iy, 62, C.texto_sobre(cor)))
+        D.add("Ícones", ctx.icone(i, ix, iy, 62, ctx.sobre(cor)))
         tx, ty = polar(cx, cy, r_out + 30, meio)
         h, v = ancora(meio)
         svg, _ = ctx.rotulo(i, tx, ty, peso=500, tamanho=25, cor=ctx.texto_fora,
@@ -216,7 +226,7 @@ def anel(ctx: Ctx) -> Desenho:
         rt = (r_in + r_out - 124) / 2 + 6
         tx, ty = polar(cx, cy, rt, meio)
         corda = 2 * rt * math.sin(math.radians(passo / 2))
-        cor_txt = escuro if cor == tinta else C.texto_sobre(cor)
+        cor_txt = escuro if cor == tinta else ctx.sobre(cor)
         svg, _ = ctx.rotulo(i, tx, ty, peso=600, tamanho=21, cor=cor_txt,
                            max_larg=min(corda * 0.78, 190), max_linhas=3)
         D.add("Textos", svg)
@@ -241,7 +251,7 @@ def leque(ctx: Ctx) -> Desenho:
         cor = ctx.cores_itens[i]
         d = setor(cx, cy, r_in, r_out, a0, a1)
         D.add("Formas", f'<path id="fatia-{i + 1}" d="{d}" fill="{cor}"/>')
-        cor_txt = C.texto_sobre(cor)
+        cor_txt = ctx.sobre(cor)
         ix, iy = polar(cx, cy, r_out - 78, meio)
         D.add("Ícones", ctx.icone(i, ix, iy, 58, cor_txt, 2))
         rt = r_out - 175
@@ -285,7 +295,7 @@ def petalas(ctx: Ctx) -> Desenho:
                                f'transform="translate(0 7) {tr}"/>')
         D.add("Formas", f'<path id="petala-{i + 1}" d="{d}" fill="{cor}" stroke="{cor}" stroke-width="16" '
                         f'stroke-linejoin="round" transform="{tr}"/>')
-        D.add("Ícones", ctx.icone(i, hx, hy, r * 0.75, C.texto_sobre(cor), 1.7))
+        D.add("Ícones", ctx.icone(i, hx, hy, r * 0.75, ctx.sobre(cor), 1.7))
         tx, ty = polar(cx, cy, dist + r + 34, beta)
         h, v = ancora(beta)
         svg, _ = ctx.rotulo(i, tx, ty, peso=700, tamanho=26,
@@ -325,7 +335,7 @@ def arvore(ctx: Ctx) -> Desenho:
         fx, fy = polar(cx, cy, dist, ang)
         D.add("Formas", sombra(circulo_d(fx, fy, rf), ctx))
         D.add("Formas", f'<circle id="folha-{i + 1}" cx="{fx:.2f}" cy="{fy:.2f}" r="{rf:.2f}" fill="{folha[i]}"/>')
-        cor_txt = C.texto_sobre(folha[i])
+        cor_txt = ctx.sobre(folha[i])
         D.add("Ícones", ctx.icone(i, fx, fy - rf * 0.38, rf * 0.42, cor_txt, 1.8))
         svg, _ = ctx.rotulo(i, fx, fy + rf * 0.2, peso=600, tamanho=17, cor=cor_txt,
                            max_larg=rf * 1.45, max_linhas=4, caixa_alta=True)
@@ -344,7 +354,7 @@ def arvore(ctx: Ctx) -> Desenho:
             nuvem.append(f'<circle cx="{nx + bx * nw:.2f}" cy="{ny + by * nh:.2f}" r="{br * nh * 1.4:.2f}"/>')
         D.add("Formas", f'<g id="nuvem" fill="{anel_cor}">{"".join(nuvem)}</g>')
         svg, _ = ctx.texto(ctx.slogan, nx, ny + nh * 0.12, peso=700, tamanho=22,
-                           cor=C.texto_sobre(anel_cor), max_larg=nw * 0.86, max_linhas=2,
+                           cor=ctx.sobre(anel_cor), max_larg=nw * 0.86, max_linhas=2,
                            caixa_alta=True, id_="slogan")
         D.add("Textos", svg)
         D.caixa = (90, 0, 910, 960)
@@ -401,7 +411,7 @@ def baloes(ctx: Ctx) -> Desenho:
                         f'stroke="#f1f1f1" stroke-width="3"/>')
         D.add("Ícones", ctx.icone(i, sx, sy, rs * 1.15, C.legivel_em(cor, "#ffffff", 2.6), 1.7))
         svg, _ = ctx.rotulo(i, bx, by + 6, peso=700, tamanho=25,
-                           cor=C.texto_sobre(cor), max_larg=rb * 1.62, max_linhas=4)
+                           cor=ctx.sobre(cor), max_larg=rb * 1.62, max_linhas=4)
         D.add("Textos", svg)
     if ctx.slogan:
         D.usou_slogan = True
@@ -644,7 +654,7 @@ def mapa(ctx: Ctx) -> Desenho:
                             f'stroke="{cor}" stroke-width="5"/>')
             D.add("Ícones", ctx.icone(i, borda_int, y, 42, cor, 1.8))
             tx = x_card + (62 if sinal > 0 else 22)
-            svg, _ = ctx.rotulo(i, tx + (cw - 84) / 2, y, tamanho=26, peso=600, cor=C.texto_sobre(cor),
+            svg, _ = ctx.rotulo(i, tx + (cw - 84) / 2, y, tamanho=26, peso=600, cor=ctx.sobre(cor),
                                 max_larg=cw - 92, max_linhas=3)
             D.add("Textos", svg)
     D.add("Formas", sombra(circulo_d(cx, cy, R), ctx, 8, 0.10))
@@ -679,7 +689,7 @@ def ciclo(ctx: Ctx) -> Desenho:
                         f'stroke-linejoin="round"/>')
         meio = (a0 + a1) / 2 + ponta / 2
         ix, iy = polar(cx, cy, rm, meio)
-        D.add("Ícones", ctx.icone(i, ix, iy, 54, C.texto_sobre(cor), 2))
+        D.add("Ícones", ctx.icone(i, ix, iy, 54, ctx.sobre(cor), 2))
         tx, ty = polar(cx, cy, r_out + 34, meio)
         h, v = ancora(meio)
         svg, _ = ctx.rotulo(i, tx, ty, tamanho=28, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
@@ -717,7 +727,7 @@ def sol(ctx: Ctx) -> Desenho:
         D.add("Formas", sombra(circulo_d(sx, sy, r_selo), ctx, 6, 0.10))
         D.add("Formas", f'<circle id="selo-{i + 1}" cx="{sx:.2f}" cy="{sy:.2f}" r="{r_selo}" fill="{cor}" '
                         f'stroke="#ffffff" stroke-width="6"/>')
-        D.add("Ícones", ctx.icone(i, sx, sy, 80, C.texto_sobre(cor), 2))
+        D.add("Ícones", ctx.icone(i, sx, sy, 80, ctx.sobre(cor), 2))
         # título centralizado sob o selo (acima, quando o selo está no topo)
         acima = math.sin(math.radians(ang)) < -0.8
         ty = sy - r_selo - 18 if acima else sy + r_selo + 18
@@ -749,7 +759,7 @@ def flor(ctx: Ctx) -> Desenho:
                         f'stroke="#ffffff" stroke-width="10"/>')
         # conteúdo na parte visível da pétala (mais para fora)
         qx, qy = polar(cx, cy, dist + rc * 0.28, ang)
-        cor_el = C.texto_sobre(cor)
+        cor_el = ctx.sobre(cor)
         D.add("Ícones", ctx.icone(i, qx, qy - rc * 0.27, rc * 0.38, cor_el, 2))
         svg, _ = ctx.rotulo(i, qx, qy + rc * 0.17, tamanho=31, peso=600, cor=cor_el,
                             max_larg=rc * 1.3, max_linhas=3)
@@ -787,7 +797,7 @@ def torre(ctx: Ctx) -> Desenho:
         D.add("Ícones", ctx.icone(i, ix, y + alt / 2 - 4, 46, C.escurecer(cor, 0.05), 2))
         area_x0, area_x1 = ix + 52, x + w - 30
         svg, _ = ctx.rotulo(i, (area_x0 + area_x1) / 2, y + alt / 2 - 4, tamanho=32, peso=600,
-                            cor=C.texto_sobre(cor), max_larg=area_x1 - area_x0, max_linhas=2)
+                            cor=ctx.sobre(cor), max_larg=area_x1 - area_x0, max_linhas=2)
         D.add("Textos", svg)
     base = topo + n * (alt + gap) - gap
     D.caixa = (500 - w_max / 2 - 10, -10, 500 + w_max / 2 + 10, base + 20)
@@ -830,7 +840,7 @@ def galho(ctx: Ctx) -> Desenho:
         D.add("Formas", sombra(circulo_d(bx, cy, r), ctx, 6, 0.10))
         D.add("Formas", f'<circle id="fruto-{i + 1}" cx="{bx:.2f}" cy="{cy:.2f}" r="{r:.2f}" fill="{cor}" '
                         f'stroke="#ffffff" stroke-width="6"/>')
-        D.add("Ícones", ctx.icone(i, bx, cy, r * 0.95, C.texto_sobre(cor), 2))
+        D.add("Ícones", ctx.icone(i, bx, cy, r * 0.95, ctx.sobre(cor), 2))
         svg, _ = ctx.rotulo(i, bx, cy + r + 22, tamanho=30, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
                             max_larg=900 / n * 0.98, max_linhas=4, vertical="top")
         D.add("Textos", svg)

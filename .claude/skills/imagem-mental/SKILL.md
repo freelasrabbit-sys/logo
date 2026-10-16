@@ -198,7 +198,12 @@ Exemplos de trabalhos já feitos: `references/criados/` (o arco do CTO foi o apr
   CTO) ou juntar tons parecidos (azul e marinho do Hermínio Silva). Confira olhando o
   logo e informe `cores` / `cores_itens` à mão quando precisar.
 - **Texto sobre cor**: branco sempre que o contraste for suficiente para negrito;
-  escuro só em cores claras (amarelo).
+  em cores claras (amarelo, verde-claro) usar a **cor escura da marca** (ex.: azul-marinho
+  do logo), nunca um cinza genérico. O gerador já faz isso (`ctx.sobre`).
+- **Ícones são o ponto mais sensível**: a usuária recusou a pena para "Autonomia" e
+  escolheu o foguete. Quando um ícone for recusado, mostre uma folha com 6 a 8 opções no
+  próprio estilo da arte e deixe-a escolher; prefira ícones de sentido direto e
+  positivo (foguete, criança caminhando) a metáforas sutis (pena).
 - **Selos e pontas**: elementos decorativos não podem cobrir partes funcionais (ex.: o
   selo do ícone cobrindo a ponta do balão).
 - **Arquivos finais**: sempre vetorizar o logo (`vetorizar_logo.py`) para o arquivo
