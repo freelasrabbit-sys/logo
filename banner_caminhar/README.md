@@ -9,4 +9,12 @@
 
 Todos os textos estão convertidos em curvas, sem fontes vinculadas.
 Camadas: Fundo, Ondas, Logo, Slogan, Título, Endereço, Divisória, Matrículas, Chamada, WhatsApp, Avião de papel.
-Fontes usadas antes da conversão (Google Fonts, OFL): Oswald Bold, Baloo 2 Bold/ExtraBold, Kalam Bold.
+Fontes usadas antes da conversão em curvas (Google Fonts, licença OFL), escolhidas por comparação com a arte de referência:
+
+| Texto | Fonte |
+|---|---|
+| NOSSA, MATRÍCULAS, ABERTAS! | Fredoka Bold |
+| EDUCAÇÃO INFANTIL, DE CASA NOVA EM 2027! | Fredoka Bold, largura 85 (semicondensada) |
+| Caminhar, COLÉGIO (logo) | Nunito Black, "a" alternativo (ss01) |
+| Rua Visconde de Mauá, 244 / 11 94515-9449 | Baloo 2 ExtraBold |
+| Textos manuscritos | Itim |

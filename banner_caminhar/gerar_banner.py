@@ -21,10 +21,11 @@ GF = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
 def ensure_fonts():
     os.makedirs(FONT_DIR, exist_ok=True)
     from fontTools.varLib.instancer import instantiateVariableFont
-    jobs = [("Oswald-Bold.ttf", "oswald/Oswald%5Bwght%5D.ttf", 700),
-            ("Baloo2-ExtraBold.ttf", "baloo2/Baloo2%5Bwght%5D.ttf", 800),
-            ("Baloo2-Bold.ttf", "baloo2/Baloo2%5Bwght%5D.ttf", 700),
-            ("Kalam-Bold.ttf", "kalam/Kalam-Bold.ttf", None)]
+    jobs = [("Fredoka-Bold.ttf", "fredoka/Fredoka%5Bwdth,wght%5D.ttf", {"wdth": 100, "wght": 700}),
+            ("Fredoka-CondBold.ttf", "fredoka/Fredoka%5Bwdth,wght%5D.ttf", {"wdth": 85, "wght": 700}),
+            ("Nunito-Black.ttf", "nunito/Nunito%5Bwght%5D.ttf", {"wght": 900}),
+            ("Baloo2-ExtraBold.ttf", "baloo2/Baloo2%5Bwght%5D.ttf", {"wght": 800}),
+            ("Itim-Regular.ttf", "itim/Itim-Regular.ttf", None)]
     for out, src, w in jobs:
         p = os.path.join(FONT_DIR, out)
         if os.path.exists(p):
@@ -33,7 +34,7 @@ def ensure_fonts():
         urllib.request.urlretrieve(GF + src, tmp)
         f = TTFont(tmp)
         if w:
-            instantiateVariableFont(f, {"wght": w}, inplace=True)
+            instantiateVariableFont(f, w, inplace=True)
         f.save(p); os.remove(tmp)
 
 # ---------------------------------------------------------------- cores (CMYK p/ PDF, RGB p/ SVG)
@@ -127,14 +128,14 @@ def font(name):
         FONTS[name] = (f, tt, tt.getGlyphSet(), tt["head"].unitsPerEm, tt.getGlyphOrder())
     return FONTS[name]
 
-def text(fname, s, size, x, y, anchor="middle", track=0.0, width=None, cap=None):
+def text(fname, s, size, x, y, anchor="middle", track=0.0, width=None, cap=None, feats=None):
     """Retorna contornos do texto (mm). size = corpo em mm; width força largura;
     cap = altura de maiúscula desejada (mm). track em fração do corpo."""
     f, tt, gs, upem, order = font(fname)
     if cap:
         size = cap / (tt["OS/2"].sCapHeight / upem)
     buf = hb.Buffer(); buf.add_str(s); buf.guess_segment_properties()
-    hb.shape(f, buf, {"kern": True, "liga": True})
+    hb.shape(f, buf, dict({"kern": True, "liga": True}, **(feats or {})))
     glyphs = []; pen_x = 0
     for info, pos in zip(buf.glyph_infos, buf.glyph_positions):
         glyphs.append((order[info.codepoint], pen_x + pos.x_offset, pos.y_offset))
@@ -234,7 +235,10 @@ def heart(cx, cy, s):
 # ---------------------------------------------------------------- composição
 def build():
     d = Doc()
-    OSW, BXB, BB, KAL = "Oswald-Bold.ttf", "Baloo2-ExtraBold.ttf", "Baloo2-Bold.ttf", "Kalam-Bold.ttf"
+    FRD, FRC = "Fredoka-Bold.ttf", "Fredoka-CondBold.ttf"  # títulos
+    NUN = "Nunito-Black.ttf"                               # logo
+    BAL = "Baloo2-ExtraBold.ttf"                           # endereço / telefone
+    ITM = "Itim-Regular.ttf"                               # manuscrito
 
     # 1 Fundo
     L = d.layer("01 Fundo")
@@ -254,18 +258,18 @@ def build():
     L = d.layer("03 Logo Colégio Caminhar")
     lx = 500
     fill(L, xform([("M", (0, 0)), ("C", (-40, 30), (-70, 75), (-62, 120)), ("C", (-30, 95), (5, 80), (40, 72)),
-                   ("C", (15, 55), (5, 30), (0, 0)), ("Z",)], (1, 0, 0, 1, lx-35, 150)), "azul")
+                   ("C", (15, 55), (5, 30), (0, 0)), ("Z",)], (1, 0, 0, 1, lx-30, 125)), "azul")
     fill(L, star(lx+30, 140, 128, 66, -14), "amarelo")
-    o, w_, _ = text(BXB, "Caminhar", 0, lx, 440, width=700)
+    o, w_, _ = text(NUN, "Caminhar", 0, lx, 440, width=700, feats={"ss01": True})
     fill(L, o, "azul")
-    o, _, _ = text(BXB, "COLÉGIO", 0, lx - 350 + 8, 300, anchor="start", cap=40, track=0.04)
+    o, _, _ = text(NUN, "COLÉGIO", 0, lx - 350 + 8, 300, anchor="start", cap=40, track=0.04)
     fill(L, o, "azul")
 
     # 4 Slogan
     L = d.layer("04 Slogan")
     m = rot(-7, 420, 600)
     for i, line in enumerate(["Mais que", "uma escola,", "uma jornada", "de descobertas!"]):
-        o, _, _ = text(KAL, line, 58, 430 + i*18, 530 + i*62)
+        o, _, _ = text(ITM, line, 60, 430 + i*18, 530 + i*62)
         fill(L, xform(o, m), "azul")
     stroke(L, xform(smooth([(270, 735), (420, 728), (590, 720)], False), m), "amarelo", 12)
     sparks(L, 205, 650, [175, 200, 225], 0, 0, "amarelo", 12)
@@ -275,10 +279,10 @@ def build():
     # 5 Título
     L = d.layer("05 Titulo Educacao Infantil")
     CX = 2050
-    o, wt, _ = text(OSW, "EDUCAÇÃO INFANTIL", 0, CX, 470, cap=205, track=0.005)
+    o, wt, _ = text(FRC, "EDUCAÇÃO INFANTIL", 0, CX, 470, width=2150)
     print("titulo largura", round(wt))
     xl = CX - wt/2
-    nossa, wn, _ = text(BXB, "NOSSA", 0, xl + 450, 200, cap=130, track=0.02)
+    nossa, wn, _ = text(FRD, "NOSSA", 0, xl + 450, 200, cap=130, track=0.02)
     br = brush(xl + 120, 65, xl + 450 + wn/2 + 170, 200, seed=3)
     fill(L, xform(br, rot(-3, CX, 135)), "amarelo")
     fill(L, nossa, "azul")
@@ -286,23 +290,23 @@ def build():
     sparks(L, xl - 20, 520, [150, 180, 210], 40, 95, "amarelo", 13)
     # faixa "DE CASA NOVA EM 2027!"
     m = rot(-2.2, CX, 605)
-    a, wa, _ = text(OSW, "DE CASA NOVA ", 0, 0, 0, cap=125, anchor="start")
-    b, wb, _ = text(OSW, "EM 2027!", 0, 0, 0, cap=125, anchor="start")
+    a, wa, _ = text(FRC, "DE CASA NOVA ", 0, 0, 0, cap=112, anchor="start")
+    b, wb, _ = text(FRC, "EM 2027!", 0, 0, 0, cap=112, anchor="start")
     tw = wa + wb; ph = 190; pw = tw + 150
     fill(L, xform(rrect(CX - pw/2, 605 - ph/2, pw, ph, ph/2), m), "azul")
     xs = CX - tw/2
-    fill(L, xform(xform(a, (1, 0, 0, 1, xs, 605 + 125/2)), m), "branco")
-    fill(L, xform(xform(b, (1, 0, 0, 1, xs + wa, 605 + 125/2)), m), "amarelo")
+    fill(L, xform(xform(a, (1, 0, 0, 1, xs, 605 + 112/2)), m), "branco")
+    fill(L, xform(xform(b, (1, 0, 0, 1, xs + wa, 605 + 112/2)), m), "amarelo")
     pr = CX + pw/2
     sparks(L, pr + 10, 605, [-35, 0, 35], 45, 100, "amarelo", 13)
 
     # 6 Endereço
     L = d.layer("06 Endereco")
-    o, wa, _ = text(BB, "Rua Visconde de Mauá, 244", 0, 0, 0, cap=78, anchor="start")
+    o, wa, _ = text(BAL, "Rua Visconde de Mauá, 244", 0, 0, 0, cap=72, anchor="start")
     ph = 150; pw = wa + 300; px = CX - pw/2 + 10; py = 715
     fill(L, rrect(px, py, pw, ph, ph/2), "azul")
     fill(L, pin(px + 105, py + 22, 108), "amarelo", evenodd=True)
-    fill(L, xform(o, (1, 0, 0, 1, px + 200, py + ph/2 + 39)), "branco")
+    fill(L, xform(o, (1, 0, 0, 1, px + 200, py + ph/2 + 36)), "branco")
 
     # 7 Divisória
     L = d.layer("07 Divisoria")
@@ -312,11 +316,11 @@ def build():
     L = d.layer("08 Matriculas Abertas")
     RX = 4010
     m = rot(-3, RX, 200)
-    o, wm, _ = text(BXB, "MATRÍCULAS", 0, RX, 285, cap=140, track=0.01)
+    o, wm, _ = text(FRD, "MATRÍCULAS", 0, RX, 285, cap=140, track=0.01)
     fill(L, xform(brush(RX - wm/2 - 60, 130, RX + wm/2 + 40, 275, seed=7), m), "amarelo")
     fill(L, xform(o, m), "azul")
     m = rot(-4, RX, 400)
-    o, wa, _ = text(BXB, "ABERTAS!", 0, RX, 400 + 70, cap=140, track=0.02)
+    o, wa, _ = text(FRD, "ABERTAS!", 0, RX, 400 + 70, cap=140, track=0.02)
     ph = 205; pw = wa + 150
     fill(L, xform(rrect(RX - pw/2, 400 - ph/2, pw, ph, 70), m), "azul")
     fill(L, xform(o, m), "branco")
@@ -330,13 +334,13 @@ def build():
     L = d.layer("09 Chamada visita")
     m = rot(-4, RX, 610)
     for i, line in enumerate(["Agende uma visita e venha", "conhecer nosso novo espaço!"]):
-        o, _, _ = text(KAL, line, 68, RX + (i*-10), 580 + i*72)
+        o, _, _ = text(ITM, line, 72, RX + (i*-10), 580 + i*72)
         fill(L, xform(o, m), "azul")
     stroke(L, xform(smooth([(RX - 420, 690), (RX, 680), (RX + 450, 668)], False), m), "amarelo", 10)
 
     # 10 WhatsApp
     L = d.layer("10 WhatsApp")
-    o, wp, _ = text(BXB, "11 94515-9449", 0, 0, 0, cap=88, anchor="start", track=0.01)
+    o, wp, _ = text(BAL, "11 94515-9449", 0, 0, 0, cap=88, anchor="start", track=0.01)
     ph = 140; pw = wp + 270; px = RX - pw/2 + 30; py = 735
     fill(L, rrect(px, py, pw, ph, ph/2), "amarelo")
     whatsapp(L, px + 30, py + ph/2, 82)
