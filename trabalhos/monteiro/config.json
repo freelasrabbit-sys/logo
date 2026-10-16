@@ -1,0 +1,16 @@
+{
+  "escola": "Monteiro Educação Montessori",
+  "logo": "logo.jpg",
+  "estilo": "infantil",
+  "cores": ["#1b76bc", "#ef3737", "#8cc63f", "#03529b"],
+  "cores_itens": ["#03529b", "#ef3737", "#8cc63f", "#1b76bc", "#ef3737"],
+  "fundo": "#ffffff",
+  "formato": "quadrado",
+  "itens": [
+    {"texto": "Pedagogia Montessori", "descricao": "Tradição e experiência desde 1970", "icone": "award"},
+    {"texto": "Ambiente Preparado para Aprender", "icone": "armchair"},
+    {"texto": "Autonomia e Liberdade com Responsabilidade", "icone": "feather"},
+    {"texto": "Humanização e Acolhimento", "icone": "heart-handshake"},
+    {"texto": "Parceria com as Famílias", "icone": "users-group"}
+  ]
+}

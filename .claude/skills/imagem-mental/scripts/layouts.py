@@ -762,6 +762,84 @@ def flor(ctx: Ctx) -> Desenho:
     return D
 
 
+# ------------------------------------- 15. TORRE DE BLOCOS (criado para o Monteiro)
+
+def torre(ctx: Ctx) -> Desenho:
+    """Torre de blocos (como a Torre Rosa Montessori): logo no topo, um bloco por tópico."""
+    D = Desenho()
+    n = ctx.n
+    alt, gap = 112, 16
+    w_min, w_max = 600, 920
+    img, _, lh = ctx.logo(500, 0, 560, 270)
+    topo = lh + 50
+    D.add("Logo", ctx.logo(500, lh / 2, 560, 270)[0])
+    for i in range(n):
+        w = w_min + (w_max - w_min) * (i / max(n - 1, 1))
+        x, y = 500 - w / 2, topo + i * (alt + gap)
+        cor = ctx.cores_itens[i]
+        D.add("Formas", sombra(f"M{x + 24} {y} h{w - 48} a24 24 0 0 1 24 24 v{alt - 48} a24 24 0 0 1 -24 24 "
+                               f"h{-(w - 48)} a24 24 0 0 1 -24 -24 v{-(alt - 48)} a24 24 0 0 1 24 -24Z", ctx, 7, 0.10))
+        D.add("Formas", f'<g id="bloco-{i + 1}"><rect x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{alt}" rx="24" '
+                        f'fill="{C.escurecer(cor, 0.14)}"/><rect x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" '
+                        f'height="{alt - 9}" rx="24" fill="{cor}"/></g>')
+        ix = x + 64
+        D.add("Formas", f'<circle id="selo-{i + 1}" cx="{ix:.2f}" cy="{y + alt / 2 - 4:.2f}" r="38" fill="#ffffff"/>')
+        D.add("Ícones", ctx.icone(i, ix, y + alt / 2 - 4, 46, C.escurecer(cor, 0.05), 2))
+        area_x0, area_x1 = ix + 52, x + w - 30
+        svg, _ = ctx.rotulo(i, (area_x0 + area_x1) / 2, y + alt / 2 - 4, tamanho=32, peso=600,
+                            cor=C.texto_sobre(cor), max_larg=area_x1 - area_x0, max_linhas=2)
+        D.add("Textos", svg)
+    base = topo + n * (alt + gap) - gap
+    D.caixa = (500 - w_max / 2 - 10, -10, 500 + w_max / 2 + 10, base + 20)
+    return D
+
+
+# ----------------------------------------------- 16. GALHO (criado para o Monteiro)
+
+def _bezier(p0, p1, p2, p3, t):
+    u = 1 - t
+    return tuple(u ** 3 * a + 3 * u * u * t * b + 3 * u * t * t * c + t ** 3 * d
+                 for a, b, c, d in zip(p0, p1, p2, p3))
+
+
+def galho(ctx: Ctx) -> Desenho:
+    """Galho com folhas atravessando a arte; tópicos pendurados como frutos; logo acima do galho."""
+    D = Desenho()
+    n = ctx.n
+    p0, p1, p2, p3 = (20, 520), (300, 440), (700, 620), (980, 500)
+    verde = next((c for c in ctx.paleta if C._sat_luz(c)[0] > 0.2 and C._sat_luz(c)[0] < 0.45), "#6aa53a")
+    tronco = C.escurecer(verde, 0.35)
+    d = f"M{p0[0]} {p0[1]} C{p1[0]} {p1[1]} {p2[0]} {p2[1]} {p3[0]} {p3[1]}"
+    D.add("Formas", f'<path id="galho" d="{d}" fill="none" stroke="{tronco}" stroke-width="16" stroke-linecap="round"/>')
+    # folhas ao longo do galho
+    for k in range(n + 1):
+        t = (k + 0.0) / n
+        fx, fy = _bezier(p0, p1, p2, p3, min(max(t, 0.04), 0.96))
+        for lado, rot in ((-1, -35), (1, 35)):
+            cor_f = verde if lado < 0 else C.clarear(verde, 0.25)
+            D.add("Decoração", f'<ellipse cx="0" cy="{lado * 26}" rx="15" ry="30" fill="{cor_f}" '
+                               f'transform="translate({fx:.2f} {fy:.2f}) rotate({rot + lado * 10})"/>')
+    r = min(88, 900 / n / 2 * 0.86)
+    for i in range(n):
+        t = (i + 0.5) / n
+        bx, by = _bezier(p0, p1, p2, p3, t)
+        cor = ctx.cores_itens[i]
+        cy = by + 70 + r
+        D.add("Formas", f'<line x1="{bx:.2f}" y1="{by:.2f}" x2="{bx:.2f}" y2="{cy - r:.2f}" stroke="{tronco}" '
+                        f'stroke-width="6" stroke-linecap="round"/>')
+        D.add("Formas", sombra(circulo_d(bx, cy, r), ctx, 6, 0.10))
+        D.add("Formas", f'<circle id="fruto-{i + 1}" cx="{bx:.2f}" cy="{cy:.2f}" r="{r:.2f}" fill="{cor}" '
+                        f'stroke="#ffffff" stroke-width="6"/>')
+        D.add("Ícones", ctx.icone(i, bx, cy, r * 0.95, C.texto_sobre(cor), 2))
+        svg, _ = ctx.rotulo(i, bx, cy + r + 22, tamanho=30, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
+                            max_larg=900 / n * 0.98, max_linhas=4, vertical="top")
+        D.add("Textos", svg)
+    y_min = min(_bezier(p0, p1, p2, p3, t / 20)[1] for t in range(21))
+    D.add("Logo", ctx.logo(500, y_min - 50 - 150, 640, 300)[0])
+    D.caixa = (0, y_min - 50 - 300 - 10, 1000, 820)
+    return D
+
+
 LAYOUTS = {
     "arco": (arco, "marca", "Anel em 'C' com ícones no anel e textos por fora (modelo Athena)"),
     "anel": (anel, "marca", "Anel completo em fatias com selo e texto dentro (modelo Koala)"),
@@ -778,4 +856,6 @@ LAYOUTS = {
     "ciclo": (ciclo, "arco-iris", "Anel de setas encadeadas, títulos coloridos por fora (criado para o Hermínio Silva)"),
     "sol": (sol, "arco-iris", "Logo como sol, raios até selos coloridos (criado para o Hermínio Silva)"),
     "flor": (flor, "arco-iris", "Pétalas circulares coloridas em volta do logo (criado para o Hermínio Silva)"),
+    "torre": (torre, "arco-iris", "Torre de blocos empilhados com logo no topo (criado para o Monteiro)"),
+    "galho": (galho, "arco-iris", "Galho com folhas e tópicos pendurados, logo acima (criado para o Monteiro)"),
 }

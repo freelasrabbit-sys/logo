@@ -98,6 +98,8 @@ layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para re
 | `ciclo` | criado para o Hermínio Silva | circular, logo multicolorido, ideia de ciclo/formação contínua | 4–7 | boa (texto fora) |
 | `sol` | criado para o Hermínio Silva | circular, alegre, logo compacto | 4–8 | boa (texto sob o selo) |
 | `flor` | criado para o Hermínio Silva | circular, infantil/colorido, visual forte | 4–7 | só curtas |
+| `torre` | criado para o Monteiro | Montessori/infantil (Torre Rosa), logo horizontal no topo | 3–6 | boa (cabe 1 linha de descrição) |
+| `galho` | criado para o Monteiro | natureza, pássaros, crescimento; logo acima do galho | 4–6 | razoável |
 
 ### 3. Monte o JSON
 Crie uma pasta de trabalho e use `exemplos/athena.json` como base. O logo é um caminho
