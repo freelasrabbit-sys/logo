@@ -84,7 +84,7 @@ layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para re
 
 | layout | origem | combina com | tópicos | descrição |
 |---|---|---|---|---|
-| `arco` | modelo Athena | clássico, logo quadrado/redondo, 1 cor | 5–8 | ótima (texto fora) |
+| `arco` | modelo Athena ✅ aprovado (CTO) | clássico, logo quadrado/redondo, 1 cor | 5–8 | ótima (texto fora) |
 | `anel` | modelo Koala | clássico ou infantil, logo redondo | 4–8 | só curtas |
 | `leque` | modelo Criança Feliz | infantil, logo horizontal | 4–6 | só curtas |
 | `petalas` | modelo Estela Maris | infantil/colorido, logo compacto | 5–8 | boa (texto fora) |
@@ -99,10 +99,10 @@ layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para re
 | `sol` | criado para o Hermínio Silva | circular, alegre, logo compacto | 4–8 | boa (texto sob o selo) |
 | `flor` | criado para o Hermínio Silva | circular, infantil/colorido, visual forte | 4–7 | só curtas |
 | `torre` | criado para o Monteiro | Montessori/infantil (Torre Rosa), logo horizontal no topo | 3–6 | boa (cabe 1 linha de descrição) |
-| `galho` | criado para o Monteiro | natureza, pássaros, crescimento; logo acima do galho | 4–6 | razoável |
-| `roda` | criado para o Monteiro | circular com setas (ciclo de círculos), qualquer estilo | 4–7 | só curtas |
-| `voo` | criado para o Monteiro | pássaros/autonomia ("do ninho ao voo"), logo embaixo | 4–6 | boa (texto ao lado) |
-| `quebra_cabeca` | criado para o Monteiro | Montessori/infantil, "pilares que se encaixam" | 4–6 | só curtas |
+| `galho` | criado para o Monteiro ✅ aprovado | natureza, pássaros, crescimento; logo acima do galho | 4–6 | razoável |
+| `roda` | criado para o Monteiro ✅ aprovado | circular com setas (ciclo de círculos), qualquer estilo | 4–7 | só curtas |
+| `voo` | criado para o Monteiro ✅ aprovado sem passarinhos (`"opcoes_layout": {"passaros": false}`) | pássaros/autonomia ("do ninho ao voo"), logo embaixo | 4–6 | boa (texto ao lado) |
+| `quebra_cabeca` | criado para o Monteiro ✅ aprovado | Montessori/infantil, "pilares que se encaixam" | 4–6 | só curtas |
 
 ### 3. Monte o JSON
 Crie uma pasta de trabalho e use `exemplos/athena.json` como base. O logo é um caminho
@@ -182,6 +182,29 @@ sozinhos, e o logo ganha um disco branco quando precisa.
 **Salvar como .cdr**. As camadas e os nomes dos objetos são mantidos.
 
 ## Lições aprendidas (feedback da usuária e revisões)
+
+### O que a usuária aprovou e elogiou (padrão de qualidade a seguir)
+Referências em `references/aprovados/`. Abra-as antes de criar opções novas.
+- **Monteiro** (todas elogiadas: "essas opções foram muito boas"): `galho`, `roda`
+  (círculos com setas), `quebra_cabeca` e `voo` **sem passarinhos** (trilha pontilhada
+  em zigue-zague saindo do logo).
+- **CTO**: `arco` (anel em C ecoando a letra do logo).
+
+O que essas artes têm em comum, e deve ser repetido:
+1. **Uma cor da marca por tópico**, cores chapadas e vivas tiradas do logo, com
+   repetição só quando faltam cores (sem tons inventados).
+2. **Formas simples e grandes** (círculos, peças, anel) com **ícone de traço grosso**
+   bem visível; ícone/texto branco, ou a cor escura da marca sobre cores claras.
+3. **Títulos curtos em negrito arredondado (Fredoka)**, todos do mesmo tamanho; a
+   descrição em letra menor e mais leve logo abaixo do título.
+4. **Fundo branco limpo**, muito espaço em volta, sombra suave sob as formas e nenhum
+   enfeite sem função. Elementos figurativos (passarinhos desenhados) foram retirados a
+   pedido: prefira a forma do conceito (trilha, galho, setas) ao desenho literal.
+5. **Logo grande e inteiro** (vetorizado na entrega), no centro ou como ponto de
+   partida/chegada da composição.
+6. **Composição que conta uma ideia** ligada à escola: ciclo contínuo (setas),
+   encaixe dos pilares (quebra-cabeça), crescimento (galho, trilha subindo).
+
 
 Exemplos de trabalhos já feitos: `references/criados/` (o arco do CTO foi o aprovado).
 
