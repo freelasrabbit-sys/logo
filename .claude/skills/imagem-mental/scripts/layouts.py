@@ -43,6 +43,7 @@ class Ctx:
     sombra: bool = True
     estilo_icone: str = "linha"  # linha | solido | negrito
     limites: list = field(default_factory=list)
+    opcoes: dict = field(default_factory=dict)  # ajustes por layout (ex.: {"passaros": false})
     logo_inline: tuple | None = None  # (conteúdo, x, y, largura, altura do viewBox) de logo SVG
     teto_rotulo: float | None = None  # tamanho único para todos os tópicos (2ª passada)
     tamanhos_rotulo: list = field(default_factory=list)
@@ -931,7 +932,8 @@ def voo(ctx: Ctx) -> Desenho:
         x = 390 if i % 2 == 0 else 610
         pts.append((x, y))
     # trilha de voo: do ninho até o último tópico
-    cam = [(500, 1000 - lh - 10)] + pts + [(560 if n % 2 else 440, topo - 120)]
+    com_passaros = ctx.opcoes.get("passaros", True)
+    cam = [(500, 1000 - lh - 10)] + pts + ([(560 if n % 2 else 440, topo - 120)] if com_passaros else [])
     d = f"M{cam[0][0]} {cam[0][1]}"
     for (xa, ya), (xb, yb) in zip(cam, cam[1:]):
         my = (ya + yb) / 2
@@ -940,7 +942,8 @@ def voo(ctx: Ctx) -> Desenho:
                        f'stroke-width="6" stroke-dasharray="2 16" stroke-linecap="round"/>')
     # passarinho voando no fim da trilha
     fx, fy = cam[-1]
-    D.add("Decoração", passaro(fx, fy + 40, 100, ctx.principal, espelhar=(n % 2 == 0), id_="passaro-voando"))
+    if com_passaros:
+        D.add("Decoração", passaro(fx, fy + 40, 100, ctx.principal, espelhar=(n % 2 == 0), id_="passaro-voando"))
     for i, (x, y) in enumerate(pts):
         cor = ctx.cores_itens[i]
         D.add("Formas", sombra(circulo_d(x, y, r), ctx, 6, 0.10))
@@ -949,14 +952,15 @@ def voo(ctx: Ctx) -> Desenho:
         D.add("Ícones", ctx.icone(i, x, y, r * 1.0, ctx.sobre(cor), 2))
         esquerda = x < 500
         cor_passaro = ctx.principal if C.distancia(cor, ctx.principal) > 60 else ctx.cor(1)
-        D.add("Formas", passaro(x + (r * 0.12 if esquerda else -r * 0.12), y - r + 8, 82, cor_passaro,
-                                espelhar=not esquerda, id_=f"passaro-{i + 1}"))
+        if com_passaros:
+            D.add("Formas", passaro(x + (r * 0.12 if esquerda else -r * 0.12), y - r + 8, 82, cor_passaro,
+                                    espelhar=not esquerda, id_=f"passaro-{i + 1}"))
         tx = x + (r + 26) * (-1 if esquerda else 1)
         # texto para fora (longe da trilha e do outro lado)
         svg, _ = ctx.rotulo(i, tx, y, tamanho=30, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
                             max_larg=300, max_linhas=3, alinhamento="end" if esquerda else "start")
         D.add("Textos", svg)
-    D.caixa = (290, topo - 150, 710, 1010)
+    D.caixa = (290, topo - (150 if com_passaros else r + 20), 710, 1010)
     return D
 
 

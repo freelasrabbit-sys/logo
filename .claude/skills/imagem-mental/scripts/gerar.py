@@ -98,7 +98,8 @@ def montar_svg(cfg, layout, curvas, formato, fundo):
     ctx = Ctx(itens=cfg["itens"], cores_itens=cores_itens, paleta=paleta, logo_uri=uri,
               logo_w=lw, logo_h=lh, fundo=fundo, familia=cfg.get("fonte", "Poppins"),
               curvas=curvas, slogan=cfg.get("slogan", ""), sombra=cfg.get("sombra", True),
-              estilo_icone=cfg.get("estilo_icone", "linha"), logo_inline=inline)
+              estilo_icone=cfg.get("estilo_icone", "linha"), logo_inline=inline,
+              opcoes=cfg.get("opcoes_layout", {}))
     D = func(ctx)
     # todos os tópicos com o mesmo tamanho de letra: refaz usando o menor tamanho que coube
     if ctx.tamanhos_rotulo and min(ctx.tamanhos_rotulo) < max(ctx.tamanhos_rotulo) * 0.97:
