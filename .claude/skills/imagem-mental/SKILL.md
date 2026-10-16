@@ -176,7 +176,36 @@ sozinhos, e o logo ganha um disco branco quando precisa.
 `_curvas.svg` e o PDF, e explique: no CorelDRAW, use **Arquivo › Importar** e depois
 **Salvar como .cdr**. As camadas e os nomes dos objetos são mantidos.
 
-## Como criar um layout novo
+## Lições aprendidas (feedback da usuária e revisões)
+
+Exemplos de trabalhos já feitos: `references/criados/` (o arco do CTO foi o aprovado).
+
+- **Criatividade**: entregar só formatos dos modelos de exemplo foi criticado. Pelo
+  menos 2 das 3 opções devem ser novas, partindo da metáfora da escola ou da forma do
+  logo. Se ela pedir um tipo (ex.: "circular"), as 3 opções seguem esse tipo e
+  continuam diferentes entre si.
+- **Letra uniforme**: todos os tópicos saem com o mesmo tamanho de letra (o gerador
+  já faz isso). Quando uma palavra longa ("Desenvolvimento") reduz demais a letra, a
+  hifenização entra; confira se a divisão ficou correta.
+- **Composição larga encolhe tudo**: textos do lado de fora das formas, nas laterais,
+  alargam a arte e ela é reduzida para caber. Se os elementos ficarem pequenos, coloque
+  o título sob o elemento (como no `sol`) ou aumente as formas.
+- **Logo é o destaque**: em layouts com logo fora do centro (onda, degraus, pilares),
+  ele deve continuar grande.
+- **Cores do logo**: a paleta automática pode perder cores de textos finos (o vinho do
+  CTO) ou juntar tons parecidos (azul e marinho do Hermínio Silva). Confira olhando o
+  logo e informe `cores` / `cores_itens` à mão quando precisar.
+- **Texto sobre cor**: branco sempre que o contraste for suficiente para negrito;
+  escuro só em cores claras (amarelo).
+- **Selos e pontas**: elementos decorativos não podem cobrir partes funcionais (ex.: o
+  selo do ícone cobrindo a ponta do balão).
+- **Arquivos finais**: sempre vetorizar o logo (`vetorizar_logo.py`) para o arquivo
+  sair 100% vetorial no CorelDRAW.
+
+Ao receber feedback novo da usuária, **acrescente aqui** a lição, para as próximas
+imagens já saírem melhores.
+
+
 
 Quando um formato novo for a melhor escolha, adicione uma função em
 `scripts/layouts.py`, seguindo o padrão das que já existem:
