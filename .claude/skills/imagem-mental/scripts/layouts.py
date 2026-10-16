@@ -850,6 +850,164 @@ def galho(ctx: Ctx) -> Desenho:
     return D
 
 
+# ------------------------------------------------- passarinho (forma reutilizável)
+
+PASSARO_D = ("M10 46 C20 30 40 24 58 27 C62 15 76 10 86 19 L99 22 L88 28 C88 44 74 59 52 61 "
+             "C36 62 22 57 10 46Z")
+PASSARO_ASA = "M30 42 C40 30 58 30 66 41 C57 52 41 54 30 42Z"
+PASSARO_CAUDA = "M12 46 L0 33 L3 52Z"
+
+
+def passaro(x, y, larg, cor, espelhar=False, id_=None):
+    """Passarinho pousado (estilo do logo Monteiro), com a base dos pés em (x, y)."""
+    e = larg / 100
+    sx = -e if espelhar else e
+    asa = C.clarear(cor, 0.35)
+    id_attr = f' id="{id_}"' if id_ else ""
+    return (f'<g{id_attr} transform="translate({x:.2f} {y - 60 * e:.2f}) scale({sx:.4f} {e:.4f}) translate(-50 0)">'
+            f'<path d="{PASSARO_CAUDA}" fill="{cor}"/><path d="{PASSARO_D}" fill="{cor}"/>'
+            f'<path d="{PASSARO_ASA}" fill="{asa}"/><circle cx="80" cy="21" r="3.6" fill="#ffffff"/></g>')
+
+
+# ---------------------------------------- 17. RODA COM SETAS (criado para o Monteiro)
+
+def roda(ctx: Ctx) -> Desenho:
+    """Círculos dos tópicos em volta do logo, ligados por setas curvas formando um ciclo."""
+    D = Desenho()
+    cx, cy, dist = 500, 500, 330
+    n = ctx.n
+    rc = min(118, math.pi * dist / n * 0.62)
+    passo = 360 / n
+    seta_cor = "#c9d3dc"
+    for i in range(n):
+        ang = -90 + i * passo
+        # seta curva até o próximo círculo, pelo lado de fora
+        folga = math.degrees(rc / dist) + 5
+        a0, a1 = ang + folga, ang + passo - folga - 3
+        r_arco = dist + 0
+        x0, y0 = polar(cx, cy, r_arco, a0)
+        x1, y1 = polar(cx, cy, r_arco, a1)
+        D.add("Decoração", f'<path id="seta-{i + 1}" d="M{x0:.2f} {y0:.2f} A{r_arco} {r_arco} 0 0 1 {x1:.2f} {y1:.2f}" '
+                           f'fill="none" stroke="{seta_cor}" stroke-width="12" stroke-linecap="round"/>')
+        tang = a1 + 90
+        D.add("Decoração", f'<path d="M-6 -17 L20 0 L-6 17Z" fill="{seta_cor}" stroke="{seta_cor}" '
+                           f'stroke-width="6" stroke-linejoin="round" '
+                           f'transform="translate({x1:.2f} {y1:.2f}) rotate({tang:.2f})"/>')
+    for i in range(n):
+        ang = -90 + i * passo
+        bx, by = polar(cx, cy, dist, ang)
+        cor = ctx.cores_itens[i]
+        D.add("Formas", sombra(circulo_d(bx, by, rc), ctx, 7, 0.10))
+        D.add("Formas", f'<circle id="circulo-{i + 1}" cx="{bx:.2f}" cy="{by:.2f}" r="{rc:.2f}" fill="{cor}" '
+                        f'stroke="#ffffff" stroke-width="8"/>')
+        el = ctx.sobre(cor)
+        D.add("Ícones", ctx.icone(i, bx, by - rc * 0.4, rc * 0.42, el, 2))
+        svg, _ = ctx.rotulo(i, bx, by + rc * 0.2, tamanho=26, peso=600, cor=el, max_larg=rc * 1.55, max_linhas=4)
+        D.add("Textos", svg)
+    rl = dist - rc - 22
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{rl}" fill="#ffffff" '
+                    f'stroke="{C.clarear(ctx.principal, 0.85)}" stroke-width="6"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, rl - 14)[0])
+    ext = dist + rc + 14
+    D.caixa = (cx - ext, cy - ext, cx + ext, cy + ext)
+    return D
+
+
+# --------------------------------------- 18. VOO DOS PÁSSAROS (criado para o Monteiro)
+
+def voo(ctx: Ctx) -> Desenho:
+    """Do ninho ao voo: logo embaixo, trilha pontilhada subindo em zigue-zague pelos tópicos,
+    cada um com um passarinho pousado."""
+    D = Desenho()
+    n = ctx.n
+    img, lw, lh = ctx.logo(500, 0, 420, 250)
+    y_logo = 1000 - lh / 2
+    D.add("Logo", ctx.logo(500, y_logo, 420, 250)[0])
+    topo, base = 130, 1000 - lh - 115
+    r = 70
+    pts = []
+    for i in range(n):
+        y = base - (base - topo) * (i / max(n - 1, 1))
+        x = 390 if i % 2 == 0 else 610
+        pts.append((x, y))
+    # trilha de voo: do ninho até o último tópico
+    cam = [(500, 1000 - lh - 10)] + pts + [(560 if n % 2 else 440, topo - 120)]
+    d = f"M{cam[0][0]} {cam[0][1]}"
+    for (xa, ya), (xb, yb) in zip(cam, cam[1:]):
+        my = (ya + yb) / 2
+        d += f" C{xa} {my:.2f} {xb} {my:.2f} {xb} {yb:.2f}"
+    D.add("Decoração", f'<path id="trilha" d="{d}" fill="none" stroke="{C.clarear(ctx.principal, 0.55)}" '
+                       f'stroke-width="6" stroke-dasharray="2 16" stroke-linecap="round"/>')
+    # passarinho voando no fim da trilha
+    fx, fy = cam[-1]
+    D.add("Decoração", passaro(fx, fy + 40, 100, ctx.principal, espelhar=(n % 2 == 0), id_="passaro-voando"))
+    for i, (x, y) in enumerate(pts):
+        cor = ctx.cores_itens[i]
+        D.add("Formas", sombra(circulo_d(x, y, r), ctx, 6, 0.10))
+        D.add("Formas", f'<circle id="parada-{i + 1}" cx="{x}" cy="{y:.2f}" r="{r}" fill="{cor}" '
+                        f'stroke="#ffffff" stroke-width="6"/>')
+        D.add("Ícones", ctx.icone(i, x, y, r * 1.0, ctx.sobre(cor), 2))
+        esquerda = x < 500
+        cor_passaro = ctx.principal if C.distancia(cor, ctx.principal) > 60 else ctx.cor(1)
+        D.add("Formas", passaro(x + (r * 0.12 if esquerda else -r * 0.12), y - r + 8, 82, cor_passaro,
+                                espelhar=not esquerda, id_=f"passaro-{i + 1}"))
+        tx = x + (r + 26) * (-1 if esquerda else 1)
+        # texto para fora (longe da trilha e do outro lado)
+        svg, _ = ctx.rotulo(i, tx, y, tamanho=30, peso=600, cor=C.legivel_em(cor, ctx.fundo, 3.0),
+                            max_larg=300, max_linhas=3, alinhamento="end" if esquerda else "start")
+        D.add("Textos", svg)
+    D.caixa = (290, topo - 150, 710, 1010)
+    return D
+
+
+# ------------------------------------- 19. QUEBRA-CABEÇA (criado para o Monteiro)
+
+def quebra_cabeca(ctx: Ctx) -> Desenho:
+    """Peças de quebra-cabeça em anel encaixadas umas nas outras, logo no centro."""
+    D = Desenho()
+    cx, cy, r_in, r_out = 500, 500, 200, 400
+    rm, k = (r_in + r_out) / 2, 30
+    n = ctx.n
+    passo = 360 / n
+
+    def borda_radial(a, de_fora, saliente):
+        """Lado radial no ângulo a, com encaixe circular no meio (saliente = para +ângulo)."""
+        ux, uy = math.cos(math.radians(a)), math.sin(math.radians(a))
+        tx, ty = -uy, ux  # direção de ângulo crescente
+        r1, r2 = (rm + k, rm - k) if de_fora else (rm - k, rm + k)
+        p1 = (cx + ux * r1, cy + uy * r1)
+        p2 = (cx + ux * r2, cy + uy * r2)
+        # escolhe o arco (grande) que fica do lado desejado
+        sweep = (1 if de_fora else 0) if saliente else (0 if de_fora else 1)
+        return f" L{p1[0]:.2f} {p1[1]:.2f} A{k} {k} 0 1 {sweep} {p2[0]:.2f} {p2[1]:.2f}"
+
+    for i in range(n):
+        a0 = -90 - passo / 2 + i * passo
+        a1 = a0 + passo
+        cor = ctx.cores_itens[i]
+        o0, o1 = polar(cx, cy, r_out, a0), polar(cx, cy, r_out, a1)
+        i0, i1 = polar(cx, cy, r_in, a1), polar(cx, cy, r_in, a0)
+        d = (f"M{o0[0]:.2f} {o0[1]:.2f} A{r_out} {r_out} 0 0 1 {o1[0]:.2f} {o1[1]:.2f}"
+             + borda_radial(a1, True, True)
+             + f" L{i0[0]:.2f} {i0[1]:.2f} A{r_in} {r_in} 0 0 0 {i1[0]:.2f} {i1[1]:.2f}"
+             + borda_radial(a0, False, True) + "Z")
+        D.add("Formas", sombra(d, ctx, 7, 0.10))
+        D.add("Formas", f'<path id="peca-{i + 1}" d="{d}" fill="{cor}" stroke="#ffffff" stroke-width="7" '
+                        f'stroke-linejoin="round"/>')
+        meio = (a0 + a1) / 2
+        el = ctx.sobre(cor)
+        # ícone em cima e texto embaixo, empilhados no centro da peça
+        bx, by = polar(cx, cy, rm + 8, meio)
+        D.add("Ícones", ctx.icone(i, bx, by - 52, 52, el, 2))
+        svg, _ = ctx.rotulo(i, bx, by - 14, tamanho=25, peso=600, cor=el, max_larg=r_out - r_in - 34,
+                            max_linhas=4, vertical="top")
+        D.add("Textos", svg)
+    D.add("Formas", f'<circle id="miolo" cx="{cx}" cy="{cy}" r="{r_in - 6}" fill="#ffffff"/>')
+    D.add("Logo", ctx.logo_no_circulo(cx, cy, r_in - 20)[0])
+    D.caixa = (cx - r_out - 12, cy - r_out - 12, cx + r_out + 12, cy + r_out + 12)
+    return D
+
+
 LAYOUTS = {
     "arco": (arco, "marca", "Anel em 'C' com ícones no anel e textos por fora (modelo Athena)"),
     "anel": (anel, "marca", "Anel completo em fatias com selo e texto dentro (modelo Koala)"),
@@ -868,4 +1026,7 @@ LAYOUTS = {
     "flor": (flor, "arco-iris", "Pétalas circulares coloridas em volta do logo (criado para o Hermínio Silva)"),
     "torre": (torre, "arco-iris", "Torre de blocos empilhados com logo no topo (criado para o Monteiro)"),
     "galho": (galho, "arco-iris", "Galho com folhas e tópicos pendurados, logo acima (criado para o Monteiro)"),
+    "roda": (roda, "arco-iris", "Círculos em volta do logo ligados por setas curvas em ciclo (criado para o Monteiro)"),
+    "voo": (voo, "arco-iris", "Do ninho ao voo: trilha subindo pelos tópicos com passarinhos (criado para o Monteiro)"),
+    "quebra_cabeca": (quebra_cabeca, "arco-iris", "Peças de quebra-cabeça em anel com logo no centro (criado para o Monteiro)"),
 }

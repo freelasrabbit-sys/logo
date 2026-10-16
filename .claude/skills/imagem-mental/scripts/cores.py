@@ -34,6 +34,10 @@ def escurecer(c: str, t: float) -> str:
     return misturar(c, "#000000", t)
 
 
+def distancia(a: str, b: str) -> float:
+    return sum((x - y) ** 2 for x, y in zip(hex_rgb(a), hex_rgb(b))) ** 0.5
+
+
 def luminancia(c: str) -> float:
     def canal(v):
         v /= 255

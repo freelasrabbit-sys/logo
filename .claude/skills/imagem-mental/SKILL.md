@@ -100,6 +100,9 @@ layout novo"). Quando a usuária aprovar um, registre-o na tabela abaixo para re
 | `flor` | criado para o Hermínio Silva | circular, infantil/colorido, visual forte | 4–7 | só curtas |
 | `torre` | criado para o Monteiro | Montessori/infantil (Torre Rosa), logo horizontal no topo | 3–6 | boa (cabe 1 linha de descrição) |
 | `galho` | criado para o Monteiro | natureza, pássaros, crescimento; logo acima do galho | 4–6 | razoável |
+| `roda` | criado para o Monteiro | circular com setas (ciclo de círculos), qualquer estilo | 4–7 | só curtas |
+| `voo` | criado para o Monteiro | pássaros/autonomia ("do ninho ao voo"), logo embaixo | 4–6 | boa (texto ao lado) |
+| `quebra_cabeca` | criado para o Monteiro | Montessori/infantil, "pilares que se encaixam" | 4–6 | só curtas |
 
 ### 3. Monte o JSON
 Crie uma pasta de trabalho e use `exemplos/athena.json` como base. O logo é um caminho
@@ -200,6 +203,9 @@ Exemplos de trabalhos já feitos: `references/criados/` (o arco do CTO foi o apr
 - **Texto sobre cor**: branco sempre que o contraste for suficiente para negrito;
   em cores claras (amarelo, verde-claro) usar a **cor escura da marca** (ex.: azul-marinho
   do logo), nunca um cinza genérico. O gerador já faz isso (`ctx.sobre`).
+- **Pedidos de tema**: quando ela pedir um tema (ex.: "algo com os pássaros do logo"),
+  traga o elemento do logo para a própria composição (passarinho desenhado com
+  `passaro()`, trilha de voo), e não só nos ícones.
 - **Ícones são o ponto mais sensível**: a usuária recusou a pena para "Autonomia" e
   escolheu o foguete. Quando um ícone for recusado, mostre uma folha com 6 a 8 opções no
   próprio estilo da arte e deixe-a escolher; prefira ícones de sentido direto e

@@ -1,6 +1,6 @@
 {
   "escola": "Monteiro Educação Montessori",
-  "logo": "logo_vetor.svg",
+  "logo": "logo.jpg",
   "estilo": "infantil",
   "cores": [
     "#1b76bc",
@@ -39,7 +39,5 @@
       "texto": "Parceria com as Famílias",
       "icone": "users-group"
     }
-  ],
-  "layout": "galho",
-  "nome_arquivo": "monteiro-imagem-mental-galho"
+  ]
 }
