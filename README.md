@@ -23,3 +23,17 @@ Fontes: Lilita One e Fredoka (OFL, em `assets/fonts/`).
 ```bash
 python3 legendas.py video_original.mp4 video/espaco_crianca_feliz_legendado.mp4
 ```
+
+# Leão — legendas dinâmicas (verde e branco)
+
+`video/leao_legendado.mp4` — 44,7 s, 1080x1920 (9:16), 30 fps, áudio original.
+Legendas em tons de verde e branco; amarelo e vermelho-alaranjado só nos destaques
+(31 anos, caráter, "não", mundo, importante, vida, história). Tempos das palavras em
+`assets/legendas_palavras_leao.json`.
+
+```bash
+python3 legendas_leao.py video_original.mp4 video/leao_legendado.mp4
+```
+
+O motor de animação (sprites de texto e formas, entradas/saídas, confete, transições,
+"camera punch", render paralelo) fica em `kinetic.py`; cada roteiro só monta a linha do tempo.
