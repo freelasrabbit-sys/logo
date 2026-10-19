@@ -37,3 +37,18 @@ python3 legendas_leao.py video_original.mp4 video/leao_legendado.mp4
 
 O motor de animação (sprites de texto e formas, entradas/saídas, confete, transições,
 "camera punch", render paralelo) fica em `kinetic.py`; cada roteiro só monta a linha do tempo.
+
+# Jardim dos Sonhos — matrículas / natação
+
+`video/jardim_dos_sonhos_legendado.mp4` — 44,3 s, 1080x1920 (9:16), 30 fps. As duas partes
+enviadas foram unidas em sequência (vídeo e áudio) antes das legendas. Paleta da escola
+(azul, lilás-azulado, pêssego, verde, lilás, laranja); destaque principal em
+"MATRÍCULAS 2027 ABERTAS", que fica como selo até o fim; logo
+(`assets/logo_jardim_dos_sonhos.png`) no "tchau, tchau". Tempos das palavras em
+`assets/legendas_palavras_jardim.json`.
+
+```bash
+ffmpeg -i parte1.mp4 -i parte2.mp4 -filter_complex "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]" \
+  -map "[v]" -map "[a]" -c:v libx264 -crf 12 -c:a aac -b:a 256k unido.mp4
+python3 legendas_jardim.py unido.mp4 video/jardim_dos_sonhos_legendado.mp4
+```
